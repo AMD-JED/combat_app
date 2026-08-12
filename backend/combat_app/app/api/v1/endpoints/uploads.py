@@ -21,14 +21,14 @@ from typing import Optional
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
-from app.core.cloudinary_service import (
+from app.services.cloudinary_service import (
     upload_avatar,
     upload_post_image,
     upload_post_video,
     upload_exercise_video,
     delete_media,
 )
-from app.core.file_validation import (
+from app.utils.file_validation import (
     validate_file,
     ALLOWED_IMAGE_TYPES,
     ALLOWED_VIDEO_TYPES,
@@ -62,6 +62,7 @@ async def update_avatar(
     # Save URL to user profile
     repo = UserRepository(db)
     await repo.update(current_user.id, {"avatar_url": url})
+    await db.commit()
 
     return {
         "message": "Avatar updated successfully",

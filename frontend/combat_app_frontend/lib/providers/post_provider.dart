@@ -8,12 +8,16 @@ class FeedState {
   final List<PostModel> posts;
   final bool isLoading;
   final bool isPosting;
+  final bool isLoadingMore;
+  final bool hasMore;
   final String? errorMessage;
 
   const FeedState({
     this.posts = const [],
     this.isLoading = false,
     this.isPosting = false,
+    this.isLoadingMore = false,
+    this.hasMore = true,
     this.errorMessage,
   });
 
@@ -21,6 +25,8 @@ class FeedState {
     List<PostModel>? posts,
     bool? isLoading,
     bool? isPosting,
+    bool? isLoadingMore,
+    bool? hasMore,
     String? errorMessage,
     bool clearError = false,
   }) {
@@ -28,6 +34,8 @@ class FeedState {
       posts: posts ?? this.posts,
       isLoading: isLoading ?? this.isLoading,
       isPosting: isPosting ?? this.isPosting,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasMore: hasMore ?? this.hasMore,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
@@ -40,13 +48,38 @@ class FeedNotifier extends StateNotifier<FeedState> {
 
   final PostService _postService = PostService();
 
+  static const int _pageSize = 20;
+
   Future<void> fetchFeed() async {
-    state = state.copyWith(isLoading: true, clearError: true);
+    state = state.copyWith(isLoading: true, clearError: true, hasMore: true);
     try {
-      final posts = await _postService.getFeed();
-      state = state.copyWith(posts: posts, isLoading: false);
+      final posts = await _postService.getFeed(skip: 0, limit: _pageSize);
+      state = state.copyWith(
+        posts: posts,
+        isLoading: false,
+        hasMore: posts.length == _pageSize,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  /// تُحمِّل المنشورات التالية عند الوصول لنهاية الـ Feed.
+  Future<void> loadMore() async {
+    if (state.isLoadingMore || !state.hasMore) return;
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final newPosts = await _postService.getFeed(
+        skip: state.posts.length,
+        limit: _pageSize,
+      );
+      state = state.copyWith(
+        posts: [...state.posts, ...newPosts],
+        hasMore: newPosts.length == _pageSize,
+        isLoadingMore: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false, errorMessage: e.toString());
     }
   }
 

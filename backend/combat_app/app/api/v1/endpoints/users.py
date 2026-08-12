@@ -39,7 +39,9 @@ async def update_profile(
 ):
     repo = UserRepository(db)
     update_data = payload.model_dump(exclude_unset=True)
-    return await repo.update(current_user.id, update_data)
+    updated = await repo.update(current_user.id, update_data)
+    await db.commit()
+    return updated
 
 
 @router.post("/{user_id}/follow", status_code=200)
@@ -59,7 +61,9 @@ async def toggle_follow(
     followed = await repo.follow(current_user.id, user_id)
     if not followed:
         await repo.unfollow(current_user.id, user_id)
+        await db.commit()
         return {"action": "unfollowed", "user_id": user_id}
+    await db.commit()
     return {"action": "followed", "user_id": user_id}
 
 

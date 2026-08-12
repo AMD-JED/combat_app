@@ -29,6 +29,9 @@ dependencies:
   # Cached network images (avatars, etc.)
   cached_network_image: ^3.3.1
 
+  # Real-time messaging (WebSocket)
+  web_socket_channel: ^2.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

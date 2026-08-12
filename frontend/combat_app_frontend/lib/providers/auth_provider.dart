@@ -34,6 +34,8 @@ class AuthState {
   }
 }
 
+// TODO: Separate userProvider (profile data & stats) from authProvider (auth state & tokens)
+// when profile editing becomes frequent or when viewing public profiles requires complex caching.
 /// Drives login/register/logout and holds the current user profile.
 /// [GoRouter]'s redirect logic (see router.dart) listens to [AuthState.status]
 /// to decide whether to show the login screen or the app itself.

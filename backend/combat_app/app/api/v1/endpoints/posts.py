@@ -52,6 +52,8 @@ async def create_post(
     )
     repo = PostRepository(db)
     created = await repo.create(post)
+    await db.commit()
+    await db.refresh(created)
     return PostResponse(
         id=created.id,
         content=created.content,
@@ -78,6 +80,7 @@ async def delete_post(
     if post.author_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     await repo.delete(post_id)
+    await db.commit()
 
 
 @router.post("/{post_id}/like")
@@ -92,6 +95,7 @@ async def toggle_like(
         raise HTTPException(status_code=404, detail="Post not found")
 
     liked = await repo.like_post(current_user.id, post_id)
+    await db.commit()
     return {"action": "liked" if liked else "unliked", "post_id": post_id}
 
 
@@ -108,5 +112,7 @@ async def add_comment(
         raise HTTPException(status_code=404, detail="Post not found")
 
     comment = await repo.add_comment(post_id, current_user.id, payload.content)
+    await db.commit()
+    await db.refresh(comment)
     comment.author = current_user
     return comment

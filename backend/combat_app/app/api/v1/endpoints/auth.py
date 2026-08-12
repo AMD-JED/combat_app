@@ -4,15 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 
 from app.core.database import get_db
-from app.core.security import (
-    hash_password, verify_password,
-    create_access_token, create_refresh_token, decode_token
-)
+from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.core.dependencies import get_current_active_user, oauth2_scheme
 from app.core.redis_client import blacklist_token
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate, UserPrivateResponse, TokenResponse, TokenRefreshRequest
+from app.services.auth_service import AuthService
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -25,42 +23,15 @@ router = APIRouter(prefix="/auth", tags=["Authentication"] )
 @router.post("/register", response_model=UserPrivateResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("3/minute")
 async def register(request: Request, payload: UserCreate, db: AsyncSession = Depends(get_db)):
-    repo = UserRepository(db)
-
-    if await repo.get_by_email(payload.email):
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    if await repo.get_by_username(payload.username):
-        raise HTTPException(status_code=400, detail="Username already taken")
-
-    user = User(
-        email=payload.email,
-        username=payload.username,
-        full_name=payload.full_name,
-        hashed_password=hash_password(payload.password),
-    )
-    return await repo.create(user)
+    service = AuthService(db)
+    return await service.register(payload)
 
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("5/minute")
 async def login(request: Request, form: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
-    repo = UserRepository(db)
-    user = await repo.get_by_email(form.username)  # username field = email
-
-    if not user or not verify_password(form.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-        )
-
-    if not user.is_active:
-        raise HTTPException(status_code=400, detail="Account is deactivated")
-
-    return TokenResponse(
-        access_token=create_access_token(user.id),
-        refresh_token=create_refresh_token(user.id),
-    )
+    service = AuthService(db)
+    return await service.login(email=form.username, password=form.password)
 
 
 @router.post("/refresh", response_model=TokenResponse)

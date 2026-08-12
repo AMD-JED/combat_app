@@ -18,8 +18,10 @@ from slowapi.errors import RateLimitExceeded
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    if settings.DEBUG:
+        # In production, use Alembic migrations instead
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
     await manager.startup()        # Connect Redis pub/sub
     print(f"[OK] {settings.APP_NAME} v{settings.APP_VERSION} is running!")
     yield

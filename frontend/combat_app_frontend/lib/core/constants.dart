@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 /// Central place for API configuration.
 ///
 /// IMPORTANT — Base URL depends on where you run the app:
@@ -6,12 +8,19 @@
 ///   • Real device       → http://<YOUR_PC_LAN_IP>:8000/api/v1  (e.g. http://192.168.1.5:8000/api/v1)
 ///   • Web (chrome)      → http://localhost:8000/api/v1
 ///
-/// Change [ApiConfig.baseUrl] below depending on your target, or better —
-/// pass it with `--dart-define=API_BASE_URL=...` at build/run time.
+/// [_defaultBaseUrl] auto-picks a sane default: `10.0.2.2` only makes sense
+/// inside the Android emulator's virtual network — a real browser (web-server,
+/// Chrome, Edge...) has no idea what that address is and every request will
+/// fail with "تعذّر الاتصال بالخادم" before it even leaves the machine. `kIsWeb`
+/// is a compile-time constant, so this stays a `const` default like before.
+/// You can still always override with `--dart-define=API_BASE_URL=...`.
 class ApiConfig {
+  static const String _defaultBaseUrl =
+      kIsWeb ? 'http://localhost:8000/api/v1' : 'http://10.0.2.2:8000/api/v1';
+
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000/api/v1',
+    defaultValue: _defaultBaseUrl,
   );
 
   // Auth
@@ -37,6 +46,17 @@ class ApiConfig {
   static String deletePost(int id) => '/posts/$id';
   static String toggleLike(int id) => '/posts/$id/like';
   static String addComment(int id) => '/posts/$id/comments';
+
+  // Messages (Direct Messaging)
+  static const String conversations = '/messages/conversations';
+  static String openConversation(int userId) =>
+      '/messages/conversations/$userId';
+  static String conversationMessages(int conversationId) =>
+      '/messages/conversations/$conversationId/messages';
+  static String markConversationRead(int conversationId) =>
+      '/messages/conversations/$conversationId/read';
+  static String deleteMessage(int messageId) => '/messages/$messageId';
+  static const String messagesWs = '/messages/ws';
 
   // Secure storage keys
   static const String accessTokenKey = 'combat_access_token';

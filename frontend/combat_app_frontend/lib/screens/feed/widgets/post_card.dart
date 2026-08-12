@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
 import '../../../models/post_model.dart';
 import '../../../providers/auth_provider.dart';
@@ -31,59 +32,65 @@ class PostCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: Author Avatar & Name & Delete button if author
+            // Header: Author Avatar & Name (tap → public profile) & Delete button if author
             Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppTheme.primaryRed.withValues(alpha: 0.2),
-                  backgroundImage: post.author.avatarUrl != null
-                      ? NetworkImage(post.author.avatarUrl!)
-                      : null,
-                  child: post.author.avatarUrl == null
-                      ? const Icon(Icons.person, color: Colors.white, size: 22)
-                      : null,
+                GestureDetector(
+                  onTap: () => context.push('/u/${post.author.username}'),
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundColor: AppTheme.primaryRed.withValues(alpha: 0.2),
+                    backgroundImage: post.author.avatarUrl != null
+                        ? NetworkImage(post.author.avatarUrl!)
+                        : null,
+                    child: post.author.avatarUrl == null
+                        ? const Icon(Icons.person, color: Colors.white, size: 22)
+                        : null,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            post.author.fullName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: Colors.white,
-                            ),
-                          ),
-                          if (post.author.sportType != null) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryRed.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(6),
+                  child: GestureDetector(
+                    onTap: () => context.push('/u/${post.author.username}'),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              post.author.fullName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: Colors.white,
                               ),
-                              child: Text(
-                                post.author.sportType!.value,
-                                style: const TextStyle(
-                                  color: AppTheme.primaryRed,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                            ),
+                            if (post.author.sportType != null) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryRed.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  post.author.sportType!.value,
+                                  style: const TextStyle(
+                                    color: AppTheme.primaryRed,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ],
-                        ],
-                      ),
-                      Text(
-                        '@${post.author.username} • ${_formatTime(post.createdAt)}',
-                        style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
-                      ),
-                    ],
+                        ),
+                        Text(
+                          '@${post.author.username} • ${_formatTime(post.createdAt)}',
+                          style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 if (isMyPost)

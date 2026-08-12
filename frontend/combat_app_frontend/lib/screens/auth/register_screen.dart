@@ -41,7 +41,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           password: _passwordController.text,
           passwordConfirm: _passwordConfirmController.text,
         );
-    if (success && mounted) context.go('/profile');
+    if (success && mounted) context.go('/main');
   }
 
   @override

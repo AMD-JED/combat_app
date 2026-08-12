@@ -6,7 +6,7 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.user import User
 from app.models.exercise import Exercise, ExerciseCategory, DifficultyLevel
-from app.repositories.post_repository import ExerciseRepository
+from app.repositories.exercise_repository import ExerciseRepository
 from app.schemas.exercise import ExerciseCreate, ExerciseResponse
 
 router = APIRouter(prefix="/exercises", tags=["Exercise Library"])
@@ -54,4 +54,7 @@ async def create_exercise(
 
     repo = ExerciseRepository(db)
     exercise = Exercise(**payload.model_dump())
-    return await repo.create(exercise)
+    created = await repo.create(exercise)
+    await db.commit()
+    await db.refresh(created)
+    return created

@@ -9,6 +9,9 @@ import 'screens/auth/register_screen.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/feed/create_post_screen.dart';
 import 'screens/profile/edit_profile_screen.dart';
+import 'screens/profile/public_profile_screen.dart';
+import 'screens/messages/chat_screen.dart';
+import 'models/user_model.dart';
 
 class _AuthRouterRefresh extends ChangeNotifier {
   _AuthRouterRefresh(Ref ref) {
@@ -52,6 +55,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile/edit',
         builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/u/:username',
+        builder: (context, state) => PublicProfileScreen(
+          username: state.pathParameters['username']!,
+        ),
+      ),
+      GoRoute(
+        path: '/messages/:conversationId',
+        builder: (context, state) {
+          final conversationId = int.parse(state.pathParameters['conversationId']!);
+          final otherUser = state.extra as UserModel;
+          return ChatScreen(conversationId: conversationId, otherUser: otherUser);
+        },
       ),
     ],
   );

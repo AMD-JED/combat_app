@@ -68,25 +68,3 @@ class PostRepository(BaseRepository[Post]):
         await self.db.refresh(comment)
         return comment
 
-
-class ExerciseRepository(BaseRepository):
-
-    def __init__(self, db: AsyncSession):
-        from app.models.exercise import Exercise
-        super().__init__(Exercise, db)
-
-    async def filter_exercises(self, category=None, difficulty=None, sport_type=None, search=None, skip=0, limit=20):
-        from app.models.exercise import Exercise
-        query = select(Exercise)
-        if category:
-            query = query.where(Exercise.category == category)
-        if difficulty:
-            query = query.where(Exercise.difficulty == difficulty)
-        if sport_type:
-            query = query.where(Exercise.sport_types.ilike(f"%{sport_type}%"))
-        if search:
-            query = query.where(
-                Exercise.name.ilike(f"%{search}%") | Exercise.description.ilike(f"%{search}%")
-            )
-        result = await self.db.execute(query.offset(skip).limit(limit))
-        return list(result.scalars().all())
