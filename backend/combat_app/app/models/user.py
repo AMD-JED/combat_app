@@ -1,4 +1,15 @@
-from sqlalchemy import Column, Integer, String, Boolean, Enum, Text, DateTime, func, Table, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    Enum,
+    Text,
+    DateTime,
+    func,
+    Table,
+    ForeignKey,
+)
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
@@ -17,15 +28,15 @@ class SportType(str, enum.Enum):
 
 
 class WeightClass(str, enum.Enum):
-    STRAWWEIGHT = "Strawweight"       # -115 lbs
-    FLYWEIGHT = "Flyweight"           # -125 lbs
-    BANTAMWEIGHT = "Bantamweight"     # -135 lbs
-    FEATHERWEIGHT = "Featherweight"   # -145 lbs
-    LIGHTWEIGHT = "Lightweight"       # -155 lbs
-    WELTERWEIGHT = "Welterweight"     # -170 lbs
-    MIDDLEWEIGHT = "Middleweight"     # -185 lbs
+    STRAWWEIGHT = "Strawweight"  # -115 lbs
+    FLYWEIGHT = "Flyweight"  # -125 lbs
+    BANTAMWEIGHT = "Bantamweight"  # -135 lbs
+    FEATHERWEIGHT = "Featherweight"  # -145 lbs
+    LIGHTWEIGHT = "Lightweight"  # -155 lbs
+    WELTERWEIGHT = "Welterweight"  # -170 lbs
+    MIDDLEWEIGHT = "Middleweight"  # -185 lbs
     LIGHT_HEAVYWEIGHT = "Light Heavyweight"  # -205 lbs
-    HEAVYWEIGHT = "Heavyweight"       # -265 lbs
+    HEAVYWEIGHT = "Heavyweight"  # -265 lbs
 
 
 # Association table for followers
@@ -47,9 +58,11 @@ class User(Base):
     full_name = Column(String(100), nullable=False)
 
     # Athlete Profile
+    # ملاحظة: هذه الحقول تبقى مؤقتًا للتوافق العكسي (deprecated).
+    # المصدر الجديد للحقيقة لملفات الرياضات المتعددة هو UserSportProfile.
     sport_type = Column(Enum(SportType), nullable=True)
     weight_class = Column(Enum(WeightClass), nullable=True)
-    belt_rank = Column(String(50), nullable=True)         # e.g., "Black Belt", "Blue Belt"
+    belt_rank = Column(String(50), nullable=True)  # e.g., "Black Belt", "Blue Belt"
     gym_affiliation = Column(String(100), nullable=True)
     coach_name = Column(String(100), nullable=True)
     bio = Column(Text, nullable=True)
@@ -75,7 +88,6 @@ class User(Base):
 
     # Relationships
     posts = relationship("Post", back_populates="author", cascade="all, delete-orphan")
-
     followers = relationship(
         "User",
         secondary=follows,
@@ -89,6 +101,11 @@ class User(Base):
         primaryjoin=id == follows.c.follower_id,
         secondaryjoin=id == follows.c.followed_id,
         back_populates="followers",
+    )
+
+    # جديد: دعم تعدد الرياضات — مستخدم واحد قد يملك عدة ملفات رياضية
+    sport_profiles = relationship(
+        "UserSportProfile", back_populates="user", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
