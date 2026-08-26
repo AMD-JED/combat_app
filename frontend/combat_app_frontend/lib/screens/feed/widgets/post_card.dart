@@ -24,6 +24,8 @@ class PostCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUser = ref.watch(authProvider).user;
     final isMyPost = currentUser?.id == post.author.id;
+    final accent = Theme.of(context).colorScheme.primary;
+    final textTheme = Theme.of(context).textTheme;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -39,12 +41,12 @@ class PostCard extends ConsumerWidget {
                   onTap: () => context.push('/u/${post.author.username}'),
                   child: CircleAvatar(
                     radius: 20,
-                    backgroundColor: AppTheme.primaryRed.withValues(alpha: 0.2),
+                    backgroundColor: accent.withValues(alpha: 0.15),
                     backgroundImage: post.author.avatarUrl != null
                         ? NetworkImage(post.author.avatarUrl!)
                         : null,
                     child: post.author.avatarUrl == null
-                        ? const Icon(Icons.person, color: Colors.white, size: 22)
+                        ? Icon(Icons.person, color: accent, size: 22)
                         : null,
                   ),
                 ),
@@ -59,27 +61,19 @@ class PostCard extends ConsumerWidget {
                           children: [
                             Text(
                               post.author.fullName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                                color: Colors.white,
-                              ),
+                              style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             if (post.author.sportType != null) ...[
                               const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.primaryRed.withValues(alpha: 0.2),
+                                  color: accent.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
                                   post.author.sportType!.value,
-                                  style: const TextStyle(
-                                    color: AppTheme.primaryRed,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: textTheme.labelSmall?.copyWith(color: accent, fontSize: 10),
                                 ),
                               ),
                             ],
@@ -87,7 +81,7 @@ class PostCard extends ConsumerWidget {
                         ),
                         Text(
                           '@${post.author.username} • ${_formatTime(post.createdAt)}',
-                          style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                          style: textTheme.bodySmall,
                         ),
                       ],
                     ),
@@ -96,20 +90,20 @@ class PostCard extends ConsumerWidget {
                 if (isMyPost)
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert, color: AppTheme.textMuted),
-                    color: AppTheme.surface,
+                    color: AppTheme.surfaceLowest,
                     onSelected: (value) {
                       if (value == 'delete') {
                         ref.read(feedProvider.notifier).deletePost(post.id);
                       }
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_outline, color: AppTheme.primaryRed, size: 20),
-                            SizedBox(width: 8),
-                            Text('حذف المنشور', style: TextStyle(color: Colors.white)),
+                            const Icon(Icons.delete_outline, color: AppTheme.error, size: 20),
+                            const SizedBox(width: 8),
+                            Text('حذف المنشور', style: textTheme.bodyMedium),
                           ],
                         ),
                       ),
@@ -121,10 +115,7 @@ class PostCard extends ConsumerWidget {
             // Content text
             if (post.content != null && post.content!.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text(
-                post.content!,
-                style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
-              ),
+              Text(post.content!, style: textTheme.bodyMedium),
             ],
 
             // Media Preview
@@ -138,7 +129,7 @@ class PostCard extends ConsumerWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     height: 150,
-                    color: AppTheme.background,
+                    color: AppTheme.surface,
                     child: const Center(
                       child: Icon(Icons.broken_image, color: AppTheme.textMuted, size: 40),
                     ),
@@ -148,7 +139,7 @@ class PostCard extends ConsumerWidget {
             ],
 
             const SizedBox(height: 14),
-            const Divider(height: 1, color: Colors.white10),
+            const Divider(height: 1, color: AppTheme.outlineVariant),
             const SizedBox(height: 8),
 
             // Action Buttons: Like & Comment
@@ -166,14 +157,14 @@ class PostCard extends ConsumerWidget {
                       children: [
                         Icon(
                           post.isLikedByMe ? Icons.favorite : Icons.favorite_border,
-                          color: post.isLikedByMe ? AppTheme.primaryRed : AppTheme.textMuted,
+                          color: post.isLikedByMe ? AppTheme.error : AppTheme.textMuted,
                           size: 20,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           '${post.likesCount}',
-                          style: TextStyle(
-                            color: post.isLikedByMe ? AppTheme.primaryRed : AppTheme.textMuted,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: post.isLikedByMe ? AppTheme.error : AppTheme.textMuted,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -207,7 +198,7 @@ class PostCard extends ConsumerWidget {
                         const SizedBox(width: 6),
                         Text(
                           '${post.commentsCount}',
-                          style: const TextStyle(
+                          style: textTheme.bodyMedium?.copyWith(
                             color: AppTheme.textMuted,
                             fontWeight: FontWeight.bold,
                           ),

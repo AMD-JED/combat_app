@@ -42,13 +42,14 @@ class _CommentsBottomSheetState extends ConsumerState<CommentsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
     return Container(
       height: MediaQuery.of(context).size.height * 0.65,
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       decoration: const BoxDecoration(
-        color: AppTheme.surface,
+        color: AppTheme.surfaceLowest,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -59,7 +60,7 @@ class _CommentsBottomSheetState extends ConsumerState<CommentsBottomSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white24,
+              color: AppTheme.outlineVariant,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -70,11 +71,11 @@ class _CommentsBottomSheetState extends ConsumerState<CommentsBottomSheet> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: AppTheme.onSurface,
               ),
             ),
           ),
-          const Divider(height: 1, color: Colors.white10),
+          const Divider(height: 1, color: AppTheme.outlineVariant),
 
           // Comments List
           Expanded(
@@ -96,12 +97,12 @@ class _CommentsBottomSheetState extends ConsumerState<CommentsBottomSheet> {
                         children: [
                           CircleAvatar(
                             radius: 18,
-                            backgroundColor: AppTheme.primaryRed.withValues(alpha: 0.2),
+                            backgroundColor: accent.withValues(alpha: 0.15),
                             backgroundImage: c.author.avatarUrl != null
                                 ? NetworkImage(c.author.avatarUrl!)
                                 : null,
                             child: c.author.avatarUrl == null
-                                ? const Icon(Icons.person, size: 20, color: Colors.white)
+                                ? Icon(Icons.person, size: 20, color: accent)
                                 : null,
                           ),
                           const SizedBox(width: 10),
@@ -109,7 +110,7 @@ class _CommentsBottomSheetState extends ConsumerState<CommentsBottomSheet> {
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: AppTheme.background,
+                                color: AppTheme.surface,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Column(
@@ -117,16 +118,16 @@ class _CommentsBottomSheetState extends ConsumerState<CommentsBottomSheet> {
                                 children: [
                                   Text(
                                     '@${c.author.username}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
-                                      color: AppTheme.gold,
+                                      color: accent,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     c.content,
-                                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                                    style: const TextStyle(color: AppTheme.onSurface, fontSize: 14),
                                   ),
                                 ],
                               ),
@@ -142,15 +143,15 @@ class _CommentsBottomSheetState extends ConsumerState<CommentsBottomSheet> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: const BoxDecoration(
-              color: AppTheme.background,
-              border: Border(top: BorderSide(color: Colors.white10)),
+              color: AppTheme.surfaceLowest,
+              border: Border(top: BorderSide(color: AppTheme.outlineVariant)),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: AppTheme.onSurface),
                     decoration: const InputDecoration(
                       hintText: 'اكتب تعليقاً...',
                       hintStyle: TextStyle(color: AppTheme.textMuted),
@@ -162,12 +163,12 @@ class _CommentsBottomSheetState extends ConsumerState<CommentsBottomSheet> {
                 IconButton(
                   onPressed: _isSending ? null : _sendComment,
                   icon: _isSending
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryRed),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: accent),
                         )
-                      : const Icon(Icons.send_rounded, color: AppTheme.primaryRed),
+                      : Icon(Icons.send_rounded, color: accent),
                 ),
               ],
             ),

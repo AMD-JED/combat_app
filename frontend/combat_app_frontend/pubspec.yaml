@@ -32,6 +32,9 @@ dependencies:
   # Real-time messaging (WebSocket)
   web_socket_channel: ^2.4.0
 
+  # Fonts used by the Athletes Hub design (Anybody / Hanken Grotesk / JetBrains Mono)
+  google_fonts: ^6.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

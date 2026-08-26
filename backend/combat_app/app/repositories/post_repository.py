@@ -1,9 +1,9 @@
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 
-from app.models.post import Post, Comment, post_likes
+from app.models.post import Post, Comment, PostReaction, ReactionType
 from app.repositories.base_repository import BaseRepository
 
 
@@ -18,7 +18,7 @@ class PostRepository(BaseRepository[Post]):
             select(Post)
             .options(
                 selectinload(Post.author),
-                selectinload(Post.liked_by),
+                selectinload(Post.reactions),
                 selectinload(Post.comments)   # ⬅️ ضروري جداً - رجّعه
             )
         .where(Post.author_id.in_(following_ids))
@@ -34,7 +34,7 @@ class PostRepository(BaseRepository[Post]):
             .options(
                 selectinload(Post.author),
                 selectinload(Post.comments),
-                selectinload(Post.liked_by)
+                selectinload(Post.reactions)
             )
             .where(Post.author_id == user_id)
             .order_by(Post.created_at.desc())
@@ -43,23 +43,32 @@ class PostRepository(BaseRepository[Post]):
     )
         return list(result.scalars().all())
 
-    async def like_post(self, user_id: int, post_id: int) -> bool:
-        existing = await self.db.execute(
-            select(post_likes).where(
-                and_(post_likes.c.user_id == user_id, post_likes.c.post_id == post_id)
+    async def react_to_post(self, user_id: int, post_id: int, reaction_type: ReactionType) -> str:
+        """
+        v5 — Add / switch / remove (toggle-off) a user's reaction to a post.
+        A user has exactly ONE reaction on a given post at a time:
+          - no prior reaction            -> insert, return "added"
+          - prior reaction, same type    -> delete it (toggle off), return "removed"
+          - prior reaction, other type   -> overwrite type, return "updated"
+        Caller (endpoint) is responsible for `await db.commit()`.
+        """
+        result = await self.db.execute(
+            select(PostReaction).where(
+                and_(PostReaction.post_id == post_id, PostReaction.user_id == user_id)
             )
         )
-        if existing.first():
-            # Unlike
-            await self.db.execute(
-                post_likes.delete().where(
-                    and_(post_likes.c.user_id == user_id, post_likes.c.post_id == post_id)
-                )
-            )
-            return False
-        # Like
-        await self.db.execute(post_likes.insert().values(user_id=user_id, post_id=post_id))
-        return True
+        existing = result.scalar_one_or_none()
+
+        if existing is None:
+            self.db.add(PostReaction(post_id=post_id, user_id=user_id, reaction_type=reaction_type.value))
+            return "added"
+
+        if existing.reaction_type == reaction_type.value:
+            await self.db.delete(existing)
+            return "removed"
+
+        existing.reaction_type = reaction_type.value
+        return "updated"
 
     async def add_comment(self, post_id: int, author_id: int, content: str) -> Comment:
         comment = Comment(post_id=post_id, author_id=author_id, content=content)

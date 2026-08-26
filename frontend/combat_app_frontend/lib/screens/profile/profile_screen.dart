@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/sports_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -14,6 +15,8 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final sportProfiles = ref.watch(sportProfilesProvider).profiles;
+    final accent = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(
@@ -25,37 +28,48 @@ class ProfileScreen extends ConsumerWidget {
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authProvider.notifier).logout(),
+            onPressed: () {
+              ref.read(sportProfilesProvider.notifier).reset();
+              ref.read(authProvider.notifier).logout();
+            },
           ),
         ],
       ),
       body: user == null
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: () => ref.read(authProvider.notifier).refreshUser(),
+              onRefresh: () => Future.wait([
+                ref.read(authProvider.notifier).refreshUser(),
+                ref.read(sportProfilesProvider.notifier).fetchMyProfiles(),
+              ]),
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
                   Center(
-                    child: CircleAvatar(
-                      radius: 56,
-                      backgroundColor: AppTheme.surface,
-                      backgroundImage: user.avatarUrl != null
-                          ? CachedNetworkImageProvider(user.avatarUrl!)
-                          : null,
-                      child: user.avatarUrl == null
-                          ? const Icon(Icons.person, size: 56, color: AppTheme.textMuted)
-                          : null,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: accent, width: 2.5),
+                      ),
+                      child: CircleAvatar(
+                        radius: 52,
+                        backgroundColor: AppTheme.surface,
+                        backgroundImage: user.avatarUrl != null
+                            ? CachedNetworkImageProvider(user.avatarUrl!)
+                            : null,
+                        child: user.avatarUrl == null
+                            ? const Icon(Icons.person, size: 52, color: AppTheme.textMuted)
+                            : null,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Center(
-                    child: Text(user.fullName,
-                        style: Theme.of(context).textTheme.headlineSmall),
+                    child: Text(user.fullName, style: Theme.of(context).textTheme.headlineMedium),
                   ),
                   Center(
-                    child: Text('@${user.username}',
-                        style: const TextStyle(color: AppTheme.textMuted)),
+                    child: Text('@${user.username}', style: Theme.of(context).textTheme.bodySmall),
                   ),
                   if (user.isCoach) ...[
                     const SizedBox(height: 8),
@@ -64,13 +78,37 @@ class ProfileScreen extends ConsumerWidget {
                         label: const Text('مدرّب'),
                         backgroundColor: AppTheme.gold.withValues(alpha: 0.15),
                         labelStyle: const TextStyle(color: AppTheme.gold),
+                        side: BorderSide.none,
                       ),
                     ),
                   ],
+
+                  // Sports chips (multi-sport profiles from /sports/me/profiles)
+                  if (sportProfiles.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: sportProfiles.map((p) {
+                        final sportAccent = SportAccent.fromKey(p.sport.slug);
+                        final known = sportAccent.key == p.sport.slug;
+                        final color = known ? sportAccent.color : AppTheme.outline;
+                        final icon = known ? sportAccent.icon : Icons.sports_outlined;
+                        return Chip(
+                          avatar: Icon(icon, size: 16, color: color),
+                          label: Text(p.sport.name),
+                          backgroundColor: color.withValues(alpha: 0.1),
+                          side: p.isPrimary ? BorderSide(color: color) : BorderSide.none,
+                        );
+                      }).toList(),
+                    ),
+                  ],
+
                   const SizedBox(height: 24),
                   _RecordCard(user: user),
                   const SizedBox(height: 16),
-                  _InfoTile(icon: Icons.sports_kabaddi, label: 'الرياضة',
+                  _InfoTile(icon: Icons.sports_kabaddi, label: 'الرياضة (قديم)',
                       value: user.sportType?.value ?? '—'),
                   _InfoTile(icon: Icons.monitor_weight_outlined, label: 'وزن',
                       value: user.weightClass?.value ?? '—'),
@@ -85,7 +123,7 @@ class ProfileScreen extends ConsumerWidget {
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Text(user.bio!),
+                        child: Text(user.bio!, style: Theme.of(context).textTheme.bodyMedium),
                       ),
                     ),
                   ],
@@ -108,8 +146,8 @@ class _RecordCard extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _StatColumn(value: '${user.wins}', label: 'فوز', color: Colors.green),
-            _StatColumn(value: '${user.losses}', label: 'خسارة', color: AppTheme.primaryRed),
+            _StatColumn(value: '${user.wins}', label: 'فوز', color: const Color(0xFF10B981)),
+            _StatColumn(value: '${user.losses}', label: 'خسارة', color: AppTheme.error),
             _StatColumn(value: '${user.draws}', label: 'تعادل', color: AppTheme.textMuted),
           ],
         ),
@@ -134,7 +172,7 @@ class _StatColumn extends StatelessWidget {
                 .headlineMedium
                 ?.copyWith(color: color, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: AppTheme.textMuted)),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -150,8 +188,8 @@ class _InfoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: Icon(icon, color: AppTheme.gold),
-      title: Text(label, style: const TextStyle(color: AppTheme.textMuted, fontSize: 12)),
-      subtitle: Text(value, style: const TextStyle(fontSize: 16)),
+      title: Text(label, style: Theme.of(context).textTheme.labelSmall),
+      subtitle: Text(value, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 16)),
     );
   }
 }

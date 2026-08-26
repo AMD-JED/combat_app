@@ -58,6 +58,11 @@ class ApiConfig {
   static String deleteMessage(int messageId) => '/messages/$messageId';
   static const String messagesWs = '/messages/ws';
 
+  // Sports (multi-sport — see app/api/v1/endpoints/sports.py)
+  static const String sportsList = '/sports/';
+  static const String mySportProfiles = '/sports/me/profiles';
+  static String sportProfile(int profileId) => '/sports/me/profiles/$profileId';
+
   // Secure storage keys
   static const String accessTokenKey = 'combat_access_token';
   static const String refreshTokenKey = 'combat_refresh_token';

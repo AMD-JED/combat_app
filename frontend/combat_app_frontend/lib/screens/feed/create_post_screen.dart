@@ -64,6 +64,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   @override
   Widget build(BuildContext context) {
     final feedState = ref.watch(feedProvider);
+    final accent = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(
@@ -74,7 +75,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             child: ElevatedButton(
               onPressed: feedState.isPosting ? null : _submitPost,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryRed,
+                backgroundColor: accent,
                 minimumSize: const Size(80, 36),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
               ),
@@ -117,7 +118,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                         ),
                       ),
                       selected: isSelected,
-                      selectedColor: AppTheme.primaryRed,
+                      selectedColor: accent,
                       backgroundColor: AppTheme.surface,
                       onSelected: (selected) {
                         if (selected) setState(() => _selectedType = type);
@@ -133,7 +134,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             TextField(
               controller: _contentController,
               maxLines: 6,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: const TextStyle(color: AppTheme.onSurface, fontSize: 16),
               decoration: const InputDecoration(
                 hintText: 'ما الذي يدور في ذهنك اليوم يا بطل؟...',
                 hintStyle: TextStyle(color: AppTheme.textMuted),

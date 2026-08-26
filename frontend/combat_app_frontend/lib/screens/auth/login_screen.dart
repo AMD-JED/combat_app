@@ -37,6 +37,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final accent = Theme.of(context).colorScheme.primary;
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       body: SafeArea(
@@ -46,12 +48,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             key: _formKey,
             child: ListView(
               children: [
-                const SizedBox(height: 60),
-                const Icon(Icons.sports_mma, size: 56, color: AppTheme.gold),
-                const SizedBox(height: 12),
-                Text('تسجيل الدخول',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center),
+                const SizedBox(height: 56),
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.bolt_rounded, size: 36, color: accent),
+                ),
+                const SizedBox(height: 20),
+                Text('مرحبًا بعودتك',
+                    style: textTheme.headlineMedium, textAlign: TextAlign.center),
+                const SizedBox(height: 6),
+                Text('سجّل الدخول لمتابعة رحلتك الرياضية',
+                    style: textTheme.bodySmall, textAlign: TextAlign.center),
                 const SizedBox(height: 32),
                 TextFormField(
                   controller: _emailController,
@@ -94,7 +106,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 16),
                   Text(
                     authState.errorMessage!,
-                    style: const TextStyle(color: AppTheme.primaryRed),
+                    style: TextStyle(color: AppTheme.error),
                     textAlign: TextAlign.center,
                   ),
                 ],
