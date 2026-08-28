@@ -3,6 +3,7 @@ from app.models.post import Post, Comment, PostReaction, PostType, ReactionType
 from app.models.exercise import Exercise, ExerciseCategory, DifficultyLevel
 from app.models.message import Conversation, Message
 from app.models.sport import Sport, UserSportProfile
+from app.models.sparring import SparringRequest
 
 __all__ = [
     "User", "follows", "SportType", "WeightClass",
@@ -10,4 +11,5 @@ __all__ = [
     "Exercise", "ExerciseCategory", "DifficultyLevel",
     "Conversation", "Message",
     "Sport", "UserSportProfile",
+    "SparringRequest",
 ]

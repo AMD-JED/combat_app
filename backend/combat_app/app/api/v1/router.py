@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, posts, exercises, uploads, messages, sports
+from app.api.v1.endpoints import auth, users, posts, exercises, uploads, messages, sports, sparring
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -10,3 +10,4 @@ api_router.include_router(exercises.router)
 api_router.include_router(uploads.router)
 api_router.include_router(messages.router)
 api_router.include_router(sports.router)
+api_router.include_router(sparring.router)

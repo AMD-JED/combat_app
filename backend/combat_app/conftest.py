@@ -92,3 +92,12 @@ async def client():
         yield ac
 
     app.dependency_overrides.clear()
+
+
+# 5. Fixture لبذر بيانات تحضيرية مباشرة (مثل صفوف Sport) خارج نطاق HTTP —
+#    نفس محرك SQLite في الذاكرة المستخدم في fixture الـ client أعلاه.
+@pytest_asyncio.fixture
+async def db_session():
+    async with TestingSessionLocal() as session:
+        yield session
+        await session.commit()
