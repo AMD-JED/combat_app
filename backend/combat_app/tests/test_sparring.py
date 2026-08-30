@@ -211,6 +211,55 @@ async def test_full_request_accept_flow(client: AsyncClient):
     assert cancel.status_code == 200
     assert cancel.json()["status"] == "cancelled"
 
+    # Now that it's cancelled (a terminal state), a brand new request
+    # between the same two users is allowed again.
+    new_request = await client.post(
+        "/api/v1/sparring/requests",
+        json={"recipient_id": b_id},
+        headers={"Authorization": f"Bearer {token_a}"},
+    )
+    assert new_request.status_code == 201
+
+
+@pytest.mark.asyncio
+async def test_duplicate_blocked_while_accepted_not_just_pending(client: AsyncClient):
+    """A new request between the same two users must also be blocked
+    while a prior one is 'accepted' (an upcoming session), not just while
+    it's 'pending'."""
+    token_a = await register_and_login(client, "activeA@test.com", "active_a")
+    token_b = await register_and_login(client, "activeB@test.com", "active_b")
+    b_id = await get_my_id(client, token_b)
+
+    resp = await client.post(
+        "/api/v1/sparring/requests",
+        json={"recipient_id": b_id},
+        headers={"Authorization": f"Bearer {token_a}"},
+    )
+    request_id = resp.json()["id"]
+
+    accept = await client.post(
+        f"/api/v1/sparring/requests/{request_id}/respond",
+        json={"action": "accept"},
+        headers={"Authorization": f"Bearer {token_b}"},
+    )
+    assert accept.json()["status"] == "accepted"
+
+    # Either direction should be blocked while it's accepted.
+    dup_same_direction = await client.post(
+        "/api/v1/sparring/requests",
+        json={"recipient_id": b_id},
+        headers={"Authorization": f"Bearer {token_a}"},
+    )
+    assert dup_same_direction.status_code == 400
+
+    a_id = await get_my_id(client, token_a)
+    dup_reverse_direction = await client.post(
+        "/api/v1/sparring/requests",
+        json={"recipient_id": a_id},
+        headers={"Authorization": f"Bearer {token_b}"},
+    )
+    assert dup_reverse_direction.status_code == 400
+
 
 @pytest.mark.asyncio
 async def test_decline_flow_and_recipient_only_action(client: AsyncClient):

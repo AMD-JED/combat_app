@@ -120,9 +120,12 @@ async def create_sparring_request(
         raise HTTPException(status_code=404, detail="Recipient not found")
 
     sparring_repo = SparringRepository(db)
-    existing = await sparring_repo.get_pending_between(current_user.id, payload.recipient_id)
+    existing = await sparring_repo.get_active_between(current_user.id, payload.recipient_id)
     if existing:
-        raise HTTPException(status_code=400, detail="A pending sparring request already exists between you two")
+        raise HTTPException(
+            status_code=400,
+            detail=f"An active sparring request already exists between you two (status: {existing.status})",
+        )
 
     request = await sparring_repo.create_request(
         requester_id=current_user.id,

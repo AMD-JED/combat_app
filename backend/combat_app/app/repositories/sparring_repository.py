@@ -25,12 +25,16 @@ class SparringRepository(BaseRepository[SparringRequest]):
         )
         return result.scalar_one_or_none()
 
-    async def get_pending_between(self, user_a: int, user_b: int) -> Optional[SparringRequest]:
-        """Any currently-pending request between these two users, in
-        either direction — used to block duplicate pending requests."""
+    async def get_active_between(self, user_a: int, user_b: int) -> Optional[SparringRequest]:
+        """Any currently-active request between these two users, in either
+        direction — 'active' means pending (awaiting a response) or
+        accepted (an upcoming/ongoing session already agreed on). Used to
+        block duplicate/overlapping requests. Declined, cancelled, and
+        completed requests are NOT active — a new request is allowed once
+        a prior one reaches one of those terminal states."""
         result = await self.db.execute(
             select(SparringRequest).where(
-                SparringRequest.status == "pending",
+                SparringRequest.status.in_(("pending", "accepted")),
                 or_(
                     and_(
                         SparringRequest.requester_id == user_a,
