@@ -1,5 +1,8 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, posts, exercises, uploads, messages, sports, sparring
+from app.api.v1.endpoints import (
+    auth, users, posts, exercises, uploads, messages, sports, sparring,
+    gyms, open_mats, search,
+)
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -11,3 +14,6 @@ api_router.include_router(uploads.router)
 api_router.include_router(messages.router)
 api_router.include_router(sports.router)
 api_router.include_router(sparring.router)
+api_router.include_router(gyms.router)
+api_router.include_router(open_mats.router)
+api_router.include_router(search.router)

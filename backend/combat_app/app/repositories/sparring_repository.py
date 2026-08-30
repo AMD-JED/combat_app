@@ -56,6 +56,8 @@ class SparringRepository(BaseRepository[SparringRequest]):
         message: Optional[str],
         scheduled_at: Optional[datetime],
         location: Optional[str],
+        gym_id: Optional[int] = None,
+        open_mat_id: Optional[int] = None,
     ) -> SparringRequest:
         req = SparringRequest(
             requester_id=requester_id,
@@ -64,6 +66,8 @@ class SparringRepository(BaseRepository[SparringRequest]):
             message=message,
             scheduled_at=scheduled_at,
             location=location,
+            gym_id=gym_id,
+            open_mat_id=open_mat_id,
         )
         return await self.create(req)
 

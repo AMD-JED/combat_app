@@ -33,6 +33,8 @@ class SparringRequestCreate(BaseModel):
     message: Optional[str] = Field(None, max_length=500)
     scheduled_at: Optional[datetime] = None
     location: Optional[str] = Field(None, max_length=200)
+    gym_id: Optional[int] = None
+    open_mat_id: Optional[int] = None
 
 
 class SparringRequestRespond(BaseModel):
@@ -51,6 +53,8 @@ class SparringRequestResponse(BaseModel):
     message: Optional[str] = None
     scheduled_at: Optional[datetime] = None
     location: Optional[str] = None
+    gym_id: Optional[int] = None
+    open_mat_id: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

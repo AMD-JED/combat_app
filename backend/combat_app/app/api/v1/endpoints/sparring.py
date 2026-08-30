@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.user import User
+from app.repositories.gym_repository import GymRepository
+from app.repositories.open_mat_repository import OpenMatRepository
 from app.repositories.sparring_repository import SparringRepository
 from app.repositories.sport_repository import SportRepository, UserSportProfileRepository
 from app.repositories.user_repository import UserRepository
@@ -127,12 +129,28 @@ async def create_sparring_request(
             detail=f"An active sparring request already exists between you two (status: {existing.status})",
         )
 
+    if payload.gym_id is not None:
+        gym_repo = GymRepository(db)
+        gym = await gym_repo.get_by_id(payload.gym_id)
+        if not gym or not gym.is_active:
+            raise HTTPException(status_code=404, detail="Gym not found")
+
+    if payload.open_mat_id is not None:
+        om_repo = OpenMatRepository(db)
+        open_mat = await om_repo.get_by_id(payload.open_mat_id)
+        if not open_mat:
+            raise HTTPException(status_code=404, detail="Open mat not found")
+        if payload.gym_id is not None and open_mat.gym_id != payload.gym_id:
+            raise HTTPException(status_code=400, detail="open_mat_id does not belong to gym_id")
+
     request = await sparring_repo.create_request(
         requester_id=current_user.id,
         recipient_id=payload.recipient_id,
         message=payload.message,
         scheduled_at=payload.scheduled_at,
         location=payload.location,
+        gym_id=payload.gym_id,
+        open_mat_id=payload.open_mat_id,
     )
     await db.commit()
     return await sparring_repo.get_with_users(request.id)

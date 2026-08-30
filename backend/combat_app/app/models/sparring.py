@@ -11,10 +11,12 @@ SparringRequest is the single table backing both flows agreed on for v6:
      here by themselves, they only recommend who to send a manual
      request to.
 
-Scheduling (scheduled_at + location) is included now per the agreed scope,
-but linking to a specific gym/Open Mat is deferred to v7: `gym_id` /
-`open_mat_id` FK columns will be added by a v7 migration once the
-`gyms` / `open_mats` tables exist. Until then `location` is free text.
+Scheduling (scheduled_at + location) is included per the agreed scope.
+`gym_id` / `open_mat_id` (added in v7, now that the `gyms` / `open_mats`
+tables exist — see the v6 SparringRequest docstring history) let a
+request optionally be anchored to a specific gym and/or open mat instead
+of (or alongside) a free-text `location`. Both stay nullable: a sparring
+request between two users doesn't have to involve a gym at all.
 
 `status` is a plain indexed VARCHAR rather than a native Postgres ENUM —
 same convention as `PostReaction.reaction_type` in app/models/post.py —
@@ -39,7 +41,11 @@ class SparringRequest(Base):
 
     message = Column(Text, nullable=True)
     scheduled_at = Column(DateTime(timezone=True), nullable=True)
-    location = Column(String(200), nullable=True)  # free text for now — see module docstring
+    location = Column(String(200), nullable=True)  # free text, used when no gym_id is set
+
+    # v7: optional anchor to a specific gym and/or open mat.
+    gym_id = Column(Integer, ForeignKey("gyms.id", ondelete="SET NULL"), nullable=True, index=True)
+    open_mat_id = Column(Integer, ForeignKey("open_mats.id", ondelete="SET NULL"), nullable=True, index=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -49,6 +55,8 @@ class SparringRequest(Base):
     # touching app/models/user.py.
     requester = relationship("User", foreign_keys=[requester_id])
     recipient = relationship("User", foreign_keys=[recipient_id])
+    gym = relationship("Gym", foreign_keys=[gym_id])
+    open_mat = relationship("OpenMat", foreign_keys=[open_mat_id])
 
     def __repr__(self) -> str:
         return f"<SparringRequest {self.requester_id}->{self.recipient_id} [{self.status}]>"

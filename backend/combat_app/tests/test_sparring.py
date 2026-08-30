@@ -322,3 +322,74 @@ async def test_request_to_nonexistent_user(client: AsyncClient):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_request_linked_to_gym_and_open_mat(client: AsyncClient):
+    """v7: sparring requests can optionally anchor to a real gym/open mat
+    instead of (or alongside) free-text location."""
+    owner_token = await register_and_login(client, "spargymowner@test.com", "spar_gym_owner")
+    requester_token = await register_and_login(client, "spargymreq@test.com", "spar_gym_req")
+    b_id = await get_my_id(client, owner_token)
+
+    gym_resp = await client.post(
+        "/api/v1/gyms/",
+        json={"name": "Sparring Anchor Gym", "location": "Setif"},
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+    gym_id = gym_resp.json()["id"]
+
+    open_mat_resp = await client.post(
+        f"/api/v1/gyms/{gym_id}/open-mats",
+        json={
+            "title": "Anchor Open Mat",
+            "is_recurring": True,
+            "recurrence_day": "monday",
+            "start_time": "17:00:00",
+        },
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+    open_mat_id = open_mat_resp.json()["id"]
+
+    resp = await client.post(
+        "/api/v1/sparring/requests",
+        json={"recipient_id": b_id, "gym_id": gym_id, "open_mat_id": open_mat_id},
+        headers={"Authorization": f"Bearer {requester_token}"},
+    )
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["gym_id"] == gym_id
+    assert resp.json()["open_mat_id"] == open_mat_id
+
+    # Use fresh recipients below so the "duplicate active request" check
+    # (tested separately in test_full_request_accept_flow) doesn't mask
+    # what these two cases are actually meant to verify.
+    recipient_c_token = await register_and_login(client, "spargymrecC@test.com", "spar_gym_rec_c")
+    c_id = await get_my_id(client, recipient_c_token)
+
+    # open_mat_id that doesn't belong to gym_id is rejected
+    other_gym = await client.post(
+        "/api/v1/gyms/",
+        json={"name": "Other Gym", "location": "Setif"},
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+    mismatch = await client.post(
+        "/api/v1/sparring/requests",
+        json={
+            "recipient_id": c_id,
+            "gym_id": other_gym.json()["id"],
+            "open_mat_id": open_mat_id,
+        },
+        headers={"Authorization": f"Bearer {requester_token}"},
+    )
+    assert mismatch.status_code == 400
+
+    recipient_d_token = await register_and_login(client, "spargymrecD@test.com", "spar_gym_rec_d")
+    d_id = await get_my_id(client, recipient_d_token)
+
+    # nonexistent gym_id is rejected
+    bad_gym = await client.post(
+        "/api/v1/sparring/requests",
+        json={"recipient_id": d_id, "gym_id": 999999},
+        headers={"Authorization": f"Bearer {requester_token}"},
+    )
+    assert bad_gym.status_code == 404
