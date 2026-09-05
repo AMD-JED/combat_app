@@ -39,6 +39,14 @@ class Settings(BaseSettings):
     # --- Redis ---
     REDIS_URL: str = "redis://localhost:6379"
 
+    # --- AI Coach (v8) ---
+    # Empty default so the app still boots without it — the /ai-coach/chat
+    # endpoint raises a clear 503 instead of a crash if it's missing.
+    # Abstracted behind app/services/gemini_service.py: this is the only
+    # place a future provider switch (Claude/OpenAI/Ollama) would touch.
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+
 
 @lru_cache()
 def get_settings() -> Settings:

@@ -6,6 +6,8 @@ from app.models.sport import Sport, UserSportProfile
 from app.models.sparring import SparringRequest
 from app.models.gym import Gym, GymMembership
 from app.models.open_mat import OpenMat, OpenMatRSVP
+from app.models.training import TrainingSession, TrainingExerciseLog
+from app.models.ai_coach import AICoachConversation, AICoachMessage
 
 __all__ = [
     "User", "follows", "SportType", "WeightClass",
@@ -16,4 +18,6 @@ __all__ = [
     "SparringRequest",
     "Gym", "GymMembership",
     "OpenMat", "OpenMatRSVP",
+    "TrainingSession", "TrainingExerciseLog",
+    "AICoachConversation", "AICoachMessage",
 ]
