@@ -8,6 +8,8 @@ from app.models.gym import Gym, GymMembership
 from app.models.open_mat import OpenMat, OpenMatRSVP
 from app.models.training import TrainingSession, TrainingExerciseLog
 from app.models.ai_coach import AICoachConversation, AICoachMessage
+from app.models.story import Story, StoryView, Highlight, HighlightStory
+from app.models.reel import Reel, ReelLike
 
 __all__ = [
     "User", "follows", "SportType", "WeightClass",
@@ -20,4 +22,6 @@ __all__ = [
     "OpenMat", "OpenMatRSVP",
     "TrainingSession", "TrainingExerciseLog",
     "AICoachConversation", "AICoachMessage",
+    "Story", "StoryView", "Highlight", "HighlightStory",
+    "Reel", "ReelLike",
 ]

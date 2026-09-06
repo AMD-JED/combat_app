@@ -62,6 +62,11 @@ class Message(Base):
     media_url = Column(String(500), nullable=True)  # Image/video from Cloudinary
     media_type = Column(String(20), nullable=True)  # "image" | "video"
 
+    # v9 — set when this message is a reply to a Story (see
+    # POST /stories/{id}/reply). SET NULL on story delete/expiry-cleanup
+    # so the message itself is never lost, just loses the story context.
+    reply_to_story_id = Column(Integer, ForeignKey("stories.id", ondelete="SET NULL"), nullable=True, index=True)
+
     is_read = Column(Boolean, default=False)
     deleted_at = Column(DateTime(timezone=True), nullable=True)  # Soft delete
 
@@ -69,3 +74,4 @@ class Message(Base):
 
     conversation = relationship("Conversation", back_populates="messages")
     sender = relationship("User", foreign_keys=[sender_id])
+    reply_to_story = relationship("Story", foreign_keys=[reply_to_story_id])

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, func, Enum, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, func, Enum, UniqueConstraint, CheckConstraint
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
@@ -74,14 +74,32 @@ class PostReaction(Base):
 
 
 class Comment(Base):
+    """
+    v9 — Comment now targets EITHER a Post OR a Reel, never both and
+    never neither. Rather than a fully generic polymorphic design
+    (commentable_type/commentable_id), this project's convention favors
+    plain direct FK columns (see reaction_type / session_type docstrings
+    elsewhere) — so `reel_id` was added as a second nullable FK alongside
+    the now-nullable `post_id`, enforced by a CHECK constraint at the DB
+    level. This was a safer migration (one ADD COLUMN + one loosened
+    NOT NULL) than restructuring the table around a generic key.
+    """
     __tablename__ = "comments"
+    __table_args__ = (
+        CheckConstraint(
+            "(post_id IS NOT NULL) != (reel_id IS NOT NULL)",
+            name="ck_comments_exactly_one_target",
+        ),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
-    post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), nullable=True, index=True)
+    reel_id = Column(Integer, ForeignKey("reels.id", ondelete="CASCADE"), nullable=True, index=True)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     post = relationship("Post", back_populates="comments")
+    reel = relationship("Reel", back_populates="comments")
     author = relationship("User")

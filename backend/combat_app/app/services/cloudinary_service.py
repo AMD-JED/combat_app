@@ -56,6 +56,9 @@ class UploadFolder(str, Enum):
     POST_VIDEO      = "combat/posts/videos"
     EXERCISE_THUMB  = "combat/exercises/thumbnails"
     EXERCISE_VIDEO  = "combat/exercises/videos"
+    STORY_IMAGE     = "combat/stories/images"
+    STORY_VIDEO     = "combat/stories/videos"
+    REEL_VIDEO      = "combat/reels/videos"
 
     def __str__(self):
         return self.value
@@ -274,6 +277,108 @@ async def upload_exercise_video(file: UploadFile, exercise_name: str) -> dict:
 
     except cloudinary.exceptions.Error as e:
         raise HTTPException(status_code=500, detail=f"Exercise video upload failed: {str(e)}")
+
+
+# ──────────────────────────────────────────────
+#  v9 — Story / Reel Media
+# ──────────────────────────────────────────────
+
+async def upload_story_image(file: UploadFile, user_id: int) -> dict:
+    """
+    Upload a Story image. Vertical-friendly crop (limit, not fill) since
+    stories are viewed full-screen at varying aspect ratios on mobile.
+    Returns: {"url": str, "public_id": str}
+    """
+    _validate_image(file)
+    contents = await _read_file(file, max_size=MAX_IMAGE_SIZE)
+
+    unique_id = uuid.uuid4().hex[:12]
+    public_id = f"{UploadFolder.STORY_IMAGE.value}/story_{unique_id}_user_{user_id}"
+
+    try:
+        result = cloudinary.uploader.upload(
+            contents,
+            public_id=public_id,
+            resource_type="image",
+            transformation=[
+                {"width": 1080, "height": 1920, "crop": "limit", "quality": "auto:good", "fetch_format": "auto"}
+            ],
+        )
+        return {"url": result["secure_url"], "public_id": result["public_id"]}
+
+    except cloudinary.exceptions.Error as e:
+        raise HTTPException(status_code=500, detail=f"Story image upload failed: {str(e)}")
+
+
+async def upload_story_video(file: UploadFile, user_id: int) -> dict:
+    """
+    Upload a Story video (short clip). Transcodes to MP4.
+    Returns: {"url": str, "public_id": str, "duration": float}
+    """
+    _validate_video(file)
+    contents = await _read_file(file, max_size=MAX_VIDEO_SIZE)
+
+    unique_id = uuid.uuid4().hex[:12]
+    public_id = f"{UploadFolder.STORY_VIDEO.value}/story_{unique_id}_user_{user_id}"
+
+    try:
+        result = cloudinary.uploader.upload(
+            contents,
+            public_id=public_id,
+            resource_type="video",
+            chunk_size=6_000_000,
+            eager=[{"format": "mp4", "transformation": [{"quality": "auto:good", "video_codec": "h264"}]}],
+            eager_async=True,
+        )
+        return {
+            "url": result["secure_url"],
+            "public_id": result["public_id"],
+            "duration": result.get("duration"),
+        }
+
+    except cloudinary.exceptions.Error as e:
+        raise HTTPException(status_code=500, detail=f"Story video upload failed: {str(e)}")
+
+
+async def upload_reel_video(file: UploadFile, user_id: int) -> dict:
+    """
+    Upload a Reel video. Transcodes to MP4 + generates a thumbnail at 1s —
+    same shape as upload_post_video, kept separate so Reels get their own
+    Cloudinary folder (combat/reels/videos) independent of Post media.
+    Returns: {"url": str, "public_id": str, "thumbnail_url": str, "duration": float}
+    """
+    _validate_video(file)
+    contents = await _read_file(file, max_size=MAX_VIDEO_SIZE)
+
+    unique_id = uuid.uuid4().hex[:12]
+    public_id = f"{UploadFolder.REEL_VIDEO.value}/reel_{unique_id}_user_{user_id}"
+
+    try:
+        result = cloudinary.uploader.upload(
+            contents,
+            public_id=public_id,
+            resource_type="video",
+            chunk_size=6_000_000,
+            eager=[
+                {"format": "mp4", "transformation": [{"quality": "auto:good", "video_codec": "h264"}]},
+                {"format": "jpg", "transformation": [{"width": 640, "height": 1138, "crop": "fill", "start_offset": "1"}]},
+            ],
+            eager_async=True,
+        )
+
+        thumbnail_url = None
+        if result.get("eager") and len(result["eager"]) > 1:
+            thumbnail_url = result["eager"][1]["secure_url"]
+
+        return {
+            "url": result["secure_url"],
+            "public_id": result["public_id"],
+            "thumbnail_url": thumbnail_url,
+            "duration": result.get("duration"),
+        }
+
+    except cloudinary.exceptions.Error as e:
+        raise HTTPException(status_code=500, detail=f"Reel video upload failed: {str(e)}")
 
 
 # ──────────────────────────────────────────────

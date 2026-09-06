@@ -26,6 +26,9 @@ from app.services.cloudinary_service import (
     upload_post_image,
     upload_post_video,
     upload_exercise_video,
+    upload_story_image,
+    upload_story_video,
+    upload_reel_video,
     delete_media,
 )
 from app.utils.file_validation import (
@@ -142,6 +145,48 @@ async def upload_exercise_tutorial(
         "message": "Exercise video uploaded successfully",
         **result,
     }
+
+
+# ──────────────────────────────────────────────
+#  v9 — Story Media
+# ──────────────────────────────────────────────
+
+@router.post("/story/image")
+async def upload_image_for_story(
+    file: UploadFile = File(..., description="JPEG, PNG, WEBP, or GIF. Max 10MB."),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Upload an image to attach to a Story (image content_type)."""
+    await validate_file(file, ALLOWED_IMAGE_TYPES, max_size_mb=10)
+    result = await upload_story_image(file, user_id=current_user.id)
+    return {"message": "Story image uploaded successfully", **result}
+
+
+@router.post("/story/video")
+async def upload_video_for_story(
+    file: UploadFile = File(..., description="MP4, MOV, AVI, or WEBM. Max 200MB."),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Upload a video to attach to a Story (video content_type)."""
+    await validate_file(file, ALLOWED_VIDEO_TYPES, max_size_mb=200)
+    result = await upload_story_video(file, user_id=current_user.id)
+    return {"message": "Story video uploaded successfully", **result}
+
+
+# ──────────────────────────────────────────────
+#  v9 — Reel Media
+# ──────────────────────────────────────────────
+
+@router.post("/reel/video")
+async def upload_video_for_reel(
+    file: UploadFile = File(..., description="MP4, MOV, AVI, or WEBM. Max 200MB."),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Upload a video to attach to a Reel. Anyone can upload (no coach
+    restriction — unlike /uploads/exercise/video)."""
+    await validate_file(file, ALLOWED_VIDEO_TYPES, max_size_mb=200)
+    result = await upload_reel_video(file, user_id=current_user.id)
+    return {"message": "Reel video uploaded successfully", **result}
 
 
 # ──────────────────────────────────────────────

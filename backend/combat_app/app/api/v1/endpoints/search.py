@@ -14,13 +14,16 @@ async def unified_search(
     limit: int = Query(5, ge=1, le=20, description="Max results per category"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Public. Searches athletes, gyms, open mats, and posts in parallel
-    (well — sequentially, but each is a single cheap ILIKE query; see
-    app/repositories/search_repository.py for why there's no join)."""
+    """Public. Searches athletes, gyms, open mats, posts, reels, and
+    active public text-stories (well — sequentially, but each is a single
+    cheap ILIKE query; see app/repositories/search_repository.py for why
+    there's no join)."""
     repo = SearchRepository(db)
     return SearchResults(
         users=await repo.search_users(q, limit=limit),
         gyms=await repo.search_gyms(q, limit=limit),
         open_mats=await repo.search_open_mats(q, limit=limit),
         posts=await repo.search_posts(q, limit=limit),
+        reels=await repo.search_reels(q, limit=limit),
+        stories=await repo.search_stories(q, limit=limit),
     )
