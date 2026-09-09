@@ -11,6 +11,7 @@ from app.repositories.open_mat_repository import OpenMatRepository
 from app.repositories.sparring_repository import SparringRepository
 from app.repositories.sport_repository import SportRepository, UserSportProfileRepository
 from app.repositories.user_repository import UserRepository
+from app.services import notification_service
 from app.schemas.sparring import (
     SparringMatchSuggestion,
     SparringRequestAction,
@@ -153,6 +154,18 @@ async def create_sparring_request(
         open_mat_id=payload.open_mat_id,
     )
     await db.commit()
+
+    await notification_service.create_and_push(
+        db,
+        recipient_id=payload.recipient_id,
+        type="sparring_request",
+        title="New sparring request",
+        body=f"{current_user.username} wants to spar with you",
+        actor_id=current_user.id,
+        data={"sparring_request_id": request.id},
+    )
+    await db.commit()
+
     return await sparring_repo.get_with_users(request.id)
 
 
@@ -209,4 +222,20 @@ async def respond_to_sparring_request(
 
     await sparring_repo.update(request_id, {"status": rule["to"]})
     await db.commit()
+
+    # v10 — only accept/decline notify (not cancel/complete, per v10
+    # scope), and always notify the ORIGINAL requester, since they're
+    # the one waiting to hear back regardless of who called this endpoint.
+    if payload.action in (SparringRequestAction.ACCEPT, SparringRequestAction.DECLINE):
+        await notification_service.create_and_push(
+            db,
+            recipient_id=req.requester_id,
+            type="sparring_response",
+            title="Sparring request update",
+            body=f"{current_user.username} {rule['to']} your sparring request",
+            actor_id=current_user.id,
+            data={"sparring_request_id": request_id, "status": rule["to"]},
+        )
+        await db.commit()
+
     return await sparring_repo.get_with_users(request_id)

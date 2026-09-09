@@ -20,6 +20,7 @@ from app.models.story import Story
 from app.repositories.story_repository import StoryRepository
 from app.repositories.user_repository import UserRepository
 from app.repositories.message_repository import ConversationRepository, MessageRepository
+from app.services import notification_service
 from app.schemas.story import (
     StoryCreate,
     StoryResponse,
@@ -171,6 +172,17 @@ async def reply_to_story(
     msg.reply_to_story_id = story_id
     await db.commit()
     await db.refresh(msg, attribute_names=["sender"])
+
+    await notification_service.create_and_push(
+        db,
+        recipient_id=story.author_id,
+        type="message",
+        title=f"New message from {current_user.username}",
+        body=payload.content[:200],
+        actor_id=current_user.id,
+        data={"conversation_id": conv.id, "message_id": msg.id, "reply_to_story_id": story_id},
+    )
+    await db.commit()
 
     return {
         "conversation_id": conv.id,

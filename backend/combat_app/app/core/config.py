@@ -47,6 +47,14 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
+    # --- Push Notifications / FCM (v10) ---
+    # Contents (not path) of a Firebase service-account JSON key. Empty
+    # default so the app still boots without it — app/services/fcm_service.py
+    # raises a clear RuntimeError instead, and notification_service catches
+    # that so notifications still get created in the DB even with push
+    # unconfigured (see app/services/notification_service.py docstring).
+    FIREBASE_CREDENTIALS_JSON: str = ""
+
 
 @lru_cache()
 def get_settings() -> Settings:

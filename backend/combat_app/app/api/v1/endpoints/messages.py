@@ -40,6 +40,7 @@ from app.schemas.message import (
     MessageCreate, MessageResponse, ConversationResponse, WSIncomingMessage
 )
 from app.services.connection_manager import manager
+from app.services import notification_service
 
 router = APIRouter(prefix="/messages", tags=["Direct Messages"])
 
@@ -155,6 +156,8 @@ async def send_message_rest(
     if not await conv_repo.user_belongs_to(current_user.id, conversation_id):
         raise HTTPException(status_code=403, detail="Not a participant of this conversation")
 
+    conversation = await conv_repo.get_by_id(conversation_id)
+
     msg_repo = MessageRepository(db)
     msg = await msg_repo.send(
         conversation_id=conversation_id,
@@ -162,6 +165,18 @@ async def send_message_rest(
         content=message_data.content,
         media_url=message_data.media_url,
         media_type=message_data.media_type,
+    )
+    await db.commit()
+
+    recipient_id = conversation.user_2_id if conversation.user_1_id == current_user.id else conversation.user_1_id
+    await notification_service.create_and_push(
+        db,
+        recipient_id=recipient_id,
+        type="message",
+        title=f"New message from {current_user.username}",
+        body=(message_data.content or "Sent an attachment")[:200],
+        actor_id=current_user.id,
+        data={"conversation_id": conversation_id, "message_id": msg.id},
     )
     await db.commit()
 
@@ -283,6 +298,19 @@ async def websocket_endpoint(
                 conv = await conv_repo.get_by_id(incoming.conversation_id)
                 other_id = conv.user_2_id if conv.user_1_id == current_user.id else conv.user_1_id
                 await manager.send_to_user(other_id, push)
+
+                # v10 — FCM push in case the recipient's app isn't
+                # foregrounded/connected to this WebSocket right now.
+                await notification_service.create_and_push(
+                    db,
+                    recipient_id=other_id,
+                    type="message",
+                    title=f"New message from {current_user.username}",
+                    body=(incoming.content or "Sent an attachment")[:200],
+                    actor_id=current_user.id,
+                    data={"conversation_id": incoming.conversation_id, "message_id": msg.id},
+                )
+                await db.commit()
 
             # ── mark_read ──
             elif incoming.type == "mark_read":

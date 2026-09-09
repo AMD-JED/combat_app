@@ -10,6 +10,7 @@ from app.models.training import TrainingSession, TrainingExerciseLog
 from app.models.ai_coach import AICoachConversation, AICoachMessage
 from app.models.story import Story, StoryView, Highlight, HighlightStory
 from app.models.reel import Reel, ReelLike
+from app.models.notification import Notification, DeviceToken, SessionReminder
 
 __all__ = [
     "User", "follows", "SportType", "WeightClass",
@@ -24,4 +25,5 @@ __all__ = [
     "AICoachConversation", "AICoachMessage",
     "Story", "StoryView", "Highlight", "HighlightStory",
     "Reel", "ReelLike",
+    "Notification", "DeviceToken", "SessionReminder",
 ]

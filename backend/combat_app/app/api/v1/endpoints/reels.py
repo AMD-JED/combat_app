@@ -21,6 +21,7 @@ from app.models.reel import Reel
 from app.repositories.reel_repository import ReelRepository
 from app.schemas.reel import ReelCreate, ReelResponse
 from app.schemas.post import CommentCreate, CommentResponse
+from app.services import notification_service
 
 router = APIRouter(prefix="/reels", tags=["Reels"])
 
@@ -164,6 +165,19 @@ async def add_reel_comment(
     await db.commit()
     await db.refresh(comment)
     comment.author = current_user
+
+    if reel.author_id != current_user.id:
+        await notification_service.create_and_push(
+            db,
+            recipient_id=reel.author_id,
+            type="comment",
+            title="New comment",
+            body=f"{current_user.username} commented on your reel",
+            actor_id=current_user.id,
+            data={"reel_id": reel_id, "comment_id": comment.id},
+        )
+        await db.commit()
+
     return comment
 
 

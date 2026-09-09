@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.post import Post, PostReaction, ReactionType
 from app.repositories.post_repository import PostRepository
 from app.repositories.user_repository import UserRepository
+from app.services import notification_service
 from app.schemas.post import (
     PostCreate,
     PostResponse,
@@ -136,6 +137,22 @@ async def react_to_post(
 
     action = await repo.react_to_post(current_user.id, post_id, payload.reaction_type)
     await db.commit()
+
+    # v10 — notify the post's author, but never for reacting to your own
+    # post, and never let a push failure affect this endpoint's result
+    # (see notification_service.create_and_push docstring).
+    if action == "added" and post.author_id != current_user.id:
+        await notification_service.create_and_push(
+            db,
+            recipient_id=post.author_id,
+            type="reaction",
+            title="New reaction",
+            body=f"{current_user.username} reacted {payload.reaction_type.value} to your post",
+            actor_id=current_user.id,
+            data={"post_id": post_id, "reaction_type": payload.reaction_type.value},
+        )
+        await db.commit()
+
     return {"action": action, "post_id": post_id, "reaction_type": payload.reaction_type.value}
 
 
@@ -182,4 +199,17 @@ async def add_comment(
     await db.commit()
     await db.refresh(comment)
     comment.author = current_user
+
+    if post.author_id != current_user.id:
+        await notification_service.create_and_push(
+            db,
+            recipient_id=post.author_id,
+            type="comment",
+            title="New comment",
+            body=f"{current_user.username} commented on your post",
+            actor_id=current_user.id,
+            data={"post_id": post_id, "comment_id": comment.id},
+        )
+        await db.commit()
+
     return comment

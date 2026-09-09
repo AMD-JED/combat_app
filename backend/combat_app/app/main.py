@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.core.database import engine, Base
 from app.api.v1.router import api_router
 from app.services.connection_manager import manager
+from app.services import reminder_scheduler
 
 # Import all models so SQLAlchemy registers them
 from app.models import user, post, exercise, message  # noqa: F401
@@ -23,9 +24,11 @@ async def lifespan(app: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     await manager.startup()        # Connect Redis pub/sub
+    reminder_scheduler.start()     # v10 — per-minute session reminder tick
     print(f"[OK] {settings.APP_NAME} v{settings.APP_VERSION} is running!")
     yield
     # Shutdown
+    reminder_scheduler.shutdown()
     await manager.shutdown()
     await engine.dispose()
     print("[BYE] Server shutting down...")
