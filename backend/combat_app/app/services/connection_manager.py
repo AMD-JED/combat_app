@@ -89,19 +89,28 @@ class ConnectionManager:
 
     async def send_to_user(self, user_id: int, payload: dict):
         """
-        Send a JSON payload to ALL connections of a user.
-        Also publishes to Redis so other workers can deliver it.
-        """
-        # Local delivery (this worker)
-        await self._deliver_locally(user_id, payload)
+        Send a JSON payload to all of a user's connections.
 
-        # Redis fan-out (other workers)
+        When Redis is available, delivery goes exclusively through the
+        publish -> subscribe round-trip: `_redis_subscriber` calls
+        `_deliver_locally` for *every* worker that receives the pmessage,
+        including this one. Also calling `_deliver_locally` directly here
+        used to double-send to anyone connected to this same worker — which
+        is every user in a single-worker dev setup (the common case), since
+        this process subscribes to its own publish. Redis being absent
+        (see `startup()`'s single-server fallback) is the only path that
+        still delivers locally on its own.
+        """
         if self._redis:
             channel = f"{CHANNEL_PREFIX}{user_id}"
             try:
                 await self._redis.publish(channel, json.dumps(payload))
+                return
             except Exception as e:
                 logger.error(f"Redis publish error: {e}")
+                # Fall through so the message isn't lost if publish itself failed.
+
+        await self._deliver_locally(user_id, payload)
 
     async def _deliver_locally(self, user_id: int, payload: dict):
         """Send to all WebSocket connections of a user on this worker."""

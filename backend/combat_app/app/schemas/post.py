@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, Dict
 from datetime import datetime
 from app.models.post import PostType, ReactionType
@@ -12,13 +12,18 @@ ZERO_REACTION_COUNTS: Dict[str, int] = {rt.value: 0 for rt in ReactionType}
 
 class PostCreate(BaseModel):
     content: Optional[str] = Field(None, max_length=2000)
+    media_url: Optional[str] = Field(None, max_length=500)
     post_type: PostType = PostType.TEXT
     tags: Optional[str] = Field(None, max_length=500)
 
-    @property
-    def validate_content(self):
+    @model_validator(mode="after")
+    def _require_content_or_media(self):
+        # NOTE: this used to be a bare `@property` named `validate_content` —
+        # properties don't run on their own, so this check never actually
+        # fired; nothing enforced it. `@model_validator` is the real hook.
         if not self.content and not self.media_url:
             raise ValueError("Post must have content or media")
+        return self
 
 
 class PostUpdate(BaseModel):
