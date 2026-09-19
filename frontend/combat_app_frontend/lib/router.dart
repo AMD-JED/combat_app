@@ -11,6 +11,7 @@ import 'screens/feed/create_post_screen.dart';
 import 'screens/profile/edit_profile_screen.dart';
 import 'screens/profile/public_profile_screen.dart';
 import 'screens/messages/chat_screen.dart';
+import 'screens/settings/settings_screen.dart';
 import 'models/user_model.dart';
 
 class _AuthRouterRefresh extends ChangeNotifier {
@@ -55,6 +56,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile/edit',
         builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(
         path: '/u/:username',

@@ -1,0 +1,22 @@
+{
+  "@@locale": "en",
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Title of the settings screen"
+  },
+  "settingsTooltip": "Settings",
+  "@settingsTooltip": {
+    "description": "Tooltip on the icon that opens the settings screen"
+  },
+  "appearanceSection": "Appearance",
+  "@appearanceSection": {
+    "description": "Section header for the theme picker"
+  },
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "themeSystem": "System default",
+  "languageSection": "Language",
+  "@languageSection": {
+    "description": "Section header for the language picker"
+  }
+}

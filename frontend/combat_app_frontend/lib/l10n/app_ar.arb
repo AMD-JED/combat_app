@@ -1,0 +1,10 @@
+{
+  "@@locale": "ar",
+  "settingsTitle": "الإعدادات",
+  "settingsTooltip": "الإعدادات",
+  "appearanceSection": "المظهر",
+  "themeLight": "فاتح",
+  "themeDark": "داكن",
+  "themeSystem": "تلقائي (حسب الجهاز)",
+  "languageSection": "اللغة"
+}

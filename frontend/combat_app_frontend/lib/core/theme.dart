@@ -35,10 +35,11 @@ enum SportAccent {
 }
 
 /// Design tokens + ThemeData factory matching the Athletes Hub mockup
-/// (light Material 3, Anybody/Hanken Grotesk/JetBrains Mono, per-sport
-/// accent color). Replaces the old dark red/gold combat-only theme.
+/// (Material 3, Cairo font — supports Arabic/French/English — per-sport
+/// accent color, light AND dark). Theme brightness is a user preference
+/// (see `theme_mode_provider.dart`), not a fixed choice.
 class AppTheme {
-  // --- Base M3 tokens (from the mockup's tailwind config, sport-agnostic) ---
+  // --- Light tokens (from the mockup's tailwind config, sport-agnostic) ---
   static const Color background = Color(0xFFFDF7FF);
   static const Color surface = Color(0xFFF2ECF4);
   static const Color surfaceHigh = Color(0xFFECE6EE);
@@ -58,62 +59,96 @@ class AppTheme {
   static const Color primaryRed = error;
   static const Color gold = Color(0xFFD4AF37);
 
-  static TextTheme _textTheme() {
-    final headline = GoogleFonts.anybody();
-    final body = GoogleFonts.hankenGrotesk();
-    final labelCaps = GoogleFonts.jetBrainsMono();
+  // --- Dark tokens ------------------------------------------------------
+  // Matches the dominant dark surface used across the Athletes Hub design
+  // reference (PostCard, ProfileScreen, TopNavbar, BottomNavBar, AuthModal).
+  // Only consumed by `themeFor(..., brightness: Brightness.dark)` and any
+  // screen already migrated to `Theme.of(context)` — NOT by the legacy
+  // static aliases above, so pre-redesign screens are unaffected for now.
+  static const Color darkBackground = Color(0xFF08080C);
+  static const Color darkSurface = Color(0xFF1A1A24);
+  static const Color darkSurfaceHigh = Color(0xFF22222E);
+  static const Color darkSurfaceLowest = Color(0xFF13131C);
+  static const Color darkOnSurface = Color(0xFFF5F5F7);
+  static const Color darkOnSurfaceVariant = Color(0xFF9A98A6);
+  static const Color darkOutline = Color(0xFF8A8894);
+  static const Color darkOutlineVariant = Color(0xFF35353F);
+  static const Color darkError = Color(0xFFFFB4AB);
+
+  static TextTheme _textTheme({
+    required Color onSurfaceColor,
+    required Color onSurfaceVariantColor,
+  }) {
+    // Cairo supports Arabic + Latin scripts in one family (used elsewhere
+    // in the project's Arabic materials), so headings/body/labels stay
+    // visually consistent across ar/fr/en instead of falling back to a
+    // different system font whenever Arabic text appears.
+    final headline = GoogleFonts.cairo(fontWeight: FontWeight.w800);
+    final body = GoogleFonts.cairo();
+    final labelCaps = GoogleFonts.cairo(fontWeight: FontWeight.w600);
 
     return TextTheme(
       displayLarge: headline.copyWith(
-          fontSize: 48, fontWeight: FontWeight.w800, height: 1.1, letterSpacing: -0.5, color: onSurface),
+          fontSize: 48, fontWeight: FontWeight.w800, height: 1.1, letterSpacing: -0.5, color: onSurfaceColor),
       headlineMedium: headline.copyWith(
-          fontSize: 24, fontWeight: FontWeight.w700, height: 1.3, color: onSurface),
+          fontSize: 24, fontWeight: FontWeight.w700, height: 1.3, color: onSurfaceColor),
       titleMedium: headline.copyWith(
-          fontSize: 18, fontWeight: FontWeight.w700, color: onSurface),
-      bodyLarge: body.copyWith(fontSize: 18, height: 1.6, color: onSurface),
-      bodyMedium: body.copyWith(fontSize: 16, height: 1.5, color: onSurface),
-      bodySmall: body.copyWith(fontSize: 14, height: 1.4, color: onSurfaceVariant),
+          fontSize: 18, fontWeight: FontWeight.w700, color: onSurfaceColor),
+      bodyLarge: body.copyWith(fontSize: 18, height: 1.6, color: onSurfaceColor),
+      bodyMedium: body.copyWith(fontSize: 16, height: 1.5, color: onSurfaceColor),
+      bodySmall: body.copyWith(fontSize: 14, height: 1.4, color: onSurfaceVariantColor),
       labelSmall: labelCaps.copyWith(
-          fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1.2, color: onSurfaceVariant),
+          fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1.2, color: onSurfaceVariantColor),
     );
   }
 
-  /// Builds the full app [ThemeData] tinted with [accent]'s color. Call this
-  /// with the athlete's chosen sport (default [SportAccent.combat] pre-login
-  /// / during onboarding before a sport is picked).
-  static ThemeData themeFor(SportAccent accent) {
-    final base = ThemeData(useMaterial3: true, brightness: Brightness.light);
-    final textTheme = _textTheme();
+  /// Builds the full app [ThemeData] tinted with [accent]'s color, in either
+  /// [Brightness.light] or [Brightness.dark]. Call with the athlete's chosen
+  /// sport (default [SportAccent.combat] pre-login / during onboarding
+  /// before a sport is picked) and the user's theme preference.
+  static ThemeData themeFor(SportAccent accent, {Brightness brightness = Brightness.light}) {
+    final isDark = brightness == Brightness.dark;
+
+    final bg = isDark ? darkBackground : background;
+    final surf = isDark ? darkSurface : surface;
+    final surfLowest = isDark ? darkSurfaceLowest : surfaceLowest;
+    final onSurf = isDark ? darkOnSurface : onSurface;
+    final onSurfVariant = isDark ? darkOnSurfaceVariant : onSurfaceVariant;
+    final outlineVariantC = isDark ? darkOutlineVariant : outlineVariant;
+    final errorC = isDark ? darkError : error;
+
+    final base = ThemeData(useMaterial3: true, brightness: brightness);
+    final textTheme = _textTheme(onSurfaceColor: onSurf, onSurfaceVariantColor: onSurfVariant);
 
     return base.copyWith(
-      scaffoldBackgroundColor: background,
+      scaffoldBackgroundColor: bg,
       textTheme: textTheme,
       colorScheme: ColorScheme.fromSeed(
         seedColor: accent.color,
-        brightness: Brightness.light,
+        brightness: brightness,
       ).copyWith(
         primary: accent.color,
         onPrimary: Colors.white,
-        surface: surface,
-        onSurface: onSurface,
-        error: error,
+        surface: surf,
+        onSurface: onSurf,
+        error: errorC,
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: background,
-        foregroundColor: onSurface,
+        backgroundColor: bg,
+        foregroundColor: onSurf,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: textTheme.titleMedium,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surface,
+        fillColor: surf,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: textTheme.bodyMedium?.copyWith(color: onSurfaceVariant),
+        hintStyle: textTheme.bodyMedium?.copyWith(color: onSurfVariant),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -128,23 +163,23 @@ class AppTheme {
         style: TextButton.styleFrom(foregroundColor: accent.color),
       ),
       cardTheme: CardThemeData(
-        color: surfaceLowest,
+        color: surfLowest,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: outlineVariant.withValues(alpha: 0.4)),
+          side: BorderSide(color: outlineVariantC.withValues(alpha: 0.4)),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surfaceLowest,
+        backgroundColor: surfLowest,
         indicatorColor: accent.color.withValues(alpha: 0.15),
         labelTextStyle: WidgetStateProperty.all(textTheme.labelSmall?.copyWith(letterSpacing: 0.2)),
       ),
     );
   }
 
-  /// Bridge for call sites still doing `AppTheme.dark` from the v3 code.
-  /// TODO: remove once `main.dart` reads the user's sport from
-  /// `authProvider`/`sportProvider` and calls [themeFor] directly.
-  static ThemeData get dark => themeFor(SportAccent.combat);
+  /// Convenience getter used by the Settings preview and any call site that
+  /// just wants "the dark theme, combat-tinted" without going through
+  /// [themeFor] directly.
+  static ThemeData get dark => themeFor(SportAccent.combat, brightness: Brightness.dark);
 }

@@ -32,8 +32,17 @@ dependencies:
   # Real-time messaging (WebSocket)
   web_socket_channel: ^2.4.0
 
-  # Fonts used by the Athletes Hub design (Anybody / Hanken Grotesk / JetBrains Mono)
+  # Font used across the Athletes Hub design — one family covering both
+  # Arabic and Latin scripts so ar/fr/en all render consistently.
   google_fonts: ^6.2.1
+
+  # Localization (AR/FR/EN — user-selectable in Settings, see l10n.yaml)
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+
+  # Persisted user preferences (theme mode, language)
+  shared_preferences: ^2.3.3
 
 dev_dependencies:
   flutter_test:
@@ -42,3 +51,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
