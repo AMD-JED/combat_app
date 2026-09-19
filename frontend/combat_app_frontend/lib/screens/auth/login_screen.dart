@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
+import 'widgets/auth_tab_header.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -36,9 +37,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final authState = ref.watch(authProvider);
-    final accent = Theme.of(context).colorScheme.primary;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
 
     return Scaffold(
       body: SafeArea(
@@ -48,7 +50,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             key: _formKey,
             child: ListView(
               children: [
-                const SizedBox(height: 56),
+                const SizedBox(height: 32),
+                AuthTabHeader(
+                  isLogin: true,
+                  loginLabel: l10n.loginTab,
+                  registerLabel: l10n.registerTab,
+                ),
+                const SizedBox(height: 32),
                 Container(
                   width: 72,
                   height: 72,
@@ -59,54 +67,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Icon(Icons.bolt_rounded, size: 36, color: accent),
                 ),
                 const SizedBox(height: 20),
-                Text('مرحبًا بعودتك',
-                    style: textTheme.headlineMedium, textAlign: TextAlign.center),
+                Text(l10n.authWelcomeBack,
+                    style: theme.textTheme.headlineMedium, textAlign: TextAlign.center),
                 const SizedBox(height: 6),
-                Text('سجّل الدخول لمتابعة رحلتك الرياضية',
-                    style: textTheme.bodySmall, textAlign: TextAlign.center),
+                Text(l10n.authLoginSubtitle,
+                    style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
                 const SizedBox(height: 32),
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'البريد الإلكتروني',
-                    prefixIcon: Icon(Icons.email_outlined),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.cardTheme.color,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: theme.dividerColor),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'الرجاء إدخال البريد الإلكتروني';
-                    }
-                    if (!value.contains('@')) return 'بريد إلكتروني غير صالح';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    labelText: 'كلمة المرور',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          labelText: l10n.emailLabel,
+                          prefixIcon: const Icon(Icons.email_outlined),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return l10n.emailRequiredError;
+                          }
+                          if (!value.contains('@')) return l10n.emailInvalidError;
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          labelText: l10n.passwordLabel,
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined),
+                            onPressed: () =>
+                                setState(() => _obscurePassword = !_obscurePassword),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return l10n.passwordRequiredError;
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'الرجاء إدخال كلمة المرور';
-                    }
-                    return null;
-                  },
                 ),
                 if (authState.errorMessage != null) ...[
                   const SizedBox(height: 16),
                   Text(
                     authState.errorMessage!,
-                    style: TextStyle(color: AppTheme.error),
+                    style: TextStyle(color: theme.colorScheme.error),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -120,13 +140,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('دخول'),
+                      : Text(l10n.loginButton),
                 ),
                 const SizedBox(height: 12),
                 TextButton(
                   onPressed: () => context.go('/register'),
-                  child: const Text('ليس لديك حساب؟ أنشئ حسابًا جديدًا'),
+                  child: Text(l10n.noAccountPrompt),
                 ),
+                const SizedBox(height: 24),
               ],
             ),
           ),

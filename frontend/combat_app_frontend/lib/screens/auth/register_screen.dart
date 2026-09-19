@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/sport_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sports_provider.dart';
+import 'widgets/auth_tab_header.dart';
 
 /// Two-step registration: (1) the existing account form, (2) a sport
 /// picker styled after the Athletes Hub mockup. The chosen sport is sent
@@ -51,6 +53,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _finishRegistration() async {
     if (_selectedSlug == null) return;
+    final l10n = AppLocalizations.of(context)!;
 
     final success = await ref.read(authProvider.notifier).register(
           email: _emailController.text.trim(),
@@ -72,7 +75,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       // profile later from the profile screen.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(ref.read(sportProfilesProvider).errorMessage ??
-            'تم إنشاء الحساب، لكن تعذّر حفظ الرياضة. يمكنك إضافتها لاحقًا من ملفك الشخصي.')),
+            l10n.sportSaveFailedNotice)),
       );
     }
     if (mounted) context.go('/main');
@@ -80,9 +83,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_step == 0 ? 'إنشاء حساب' : 'اختر رياضتك'),
+        title: Text(_step == 0 ? l10n.registerAccountStepTitle : l10n.registerSportStepTitle),
         leading: _step == 1
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -91,13 +95,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             : null,
       ),
       body: SafeArea(
-        child: _step == 0 ? _buildAccountForm(context) : _buildSportPicker(context),
+        child: _step == 0 ? _buildAccountForm(context, l10n) : _buildSportPicker(context, l10n),
       ),
     );
   }
 
-  Widget _buildAccountForm(BuildContext context) {
+  Widget _buildAccountForm(BuildContext context, AppLocalizations l10n) {
     final authState = ref.watch(authProvider);
+    final theme = Theme.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -105,85 +110,119 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         key: _formKey,
         child: ListView(
           children: [
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _fullNameController,
-              decoration: const InputDecoration(labelText: 'الاسم الكامل'),
-              validator: (v) {
-                final value = v?.trim() ?? '';
-                if (value.length < 2 || value.length > 100) {
-                  return 'الاسم يجب أن يكون بين 2 و 100 حرف';
-                }
-                return null;
-              },
-            ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _usernameController,
-              decoration: const InputDecoration(
-                labelText: 'اسم المستخدم',
-                helperText: 'أحرف إنجليزية وأرقام و _ فقط، بدون مسافات',
+            AuthTabHeader(
+              isLogin: false,
+              loginLabel: l10n.loginTab,
+              registerLabel: l10n.registerTab,
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.cardTheme.color,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: theme.dividerColor),
               ),
-              validator: (v) {
-                final value = v?.trim() ?? '';
-                if (value.length < 3 || value.length > 50) {
-                  return 'يجب أن يكون بين 3 و 50 حرفًا';
-                }
-                if (!_usernamePattern.hasMatch(value)) {
-                  return 'يُسمح فقط بأحرف/أرقام/underscore';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'البريد الإلكتروني'),
-              validator: (v) {
-                if (v == null || !v.contains('@')) return 'بريد إلكتروني غير صالح';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'كلمة المرور',
-                helperText: '8 أحرف على الأقل',
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _fullNameController,
+                    decoration: InputDecoration(
+                      labelText: l10n.fullNameLabel,
+                      prefixIcon: const Icon(Icons.badge_outlined),
+                    ),
+                    validator: (v) {
+                      final value = v?.trim() ?? '';
+                      if (value.length < 2 || value.length > 100) {
+                        return l10n.fullNameLengthError;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _usernameController,
+                    decoration: InputDecoration(
+                      labelText: l10n.usernameLabel,
+                      helperText: l10n.usernameHelper,
+                      prefixIcon: const Icon(Icons.alternate_email),
+                    ),
+                    validator: (v) {
+                      final value = v?.trim() ?? '';
+                      if (value.length < 3 || value.length > 50) {
+                        return l10n.usernameLengthError;
+                      }
+                      if (!_usernamePattern.hasMatch(value)) {
+                        return l10n.usernamePatternError;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: l10n.emailLabel,
+                      prefixIcon: const Icon(Icons.email_outlined),
+                    ),
+                    validator: (v) {
+                      if (v == null || !v.contains('@')) return l10n.emailInvalidError;
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.passwordLabel,
+                      helperText: l10n.passwordHelper,
+                      prefixIcon: const Icon(Icons.lock_outline),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.length < 8) {
+                        return l10n.passwordLengthError;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _passwordConfirmController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.passwordConfirmLabel,
+                      prefixIcon: const Icon(Icons.lock_reset_outlined),
+                    ),
+                    validator: (v) {
+                      if (v != _passwordController.text) {
+                        return l10n.passwordMismatchError;
+                      }
+                      return null;
+                    },
+                  ),
+                ],
               ),
-              validator: (v) {
-                if (v == null || v.length < 8) {
-                  return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _passwordConfirmController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'تأكيد كلمة المرور'),
-              validator: (v) {
-                if (v != _passwordController.text) {
-                  return 'كلمتا المرور غير متطابقتين';
-                }
-                return null;
-              },
             ),
             if (authState.errorMessage != null) ...[
               const SizedBox(height: 16),
               Text(
                 authState.errorMessage!,
-                style: TextStyle(color: AppTheme.error),
+                style: TextStyle(color: theme.colorScheme.error),
                 textAlign: TextAlign.center,
               ),
             ],
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _goToSportStep,
-              child: const Text('التالي'),
+              child: Text(l10n.nextButton),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => context.go('/login'),
+              child: Text(l10n.alreadyHaveAccountPrompt),
             ),
             const SizedBox(height: 24),
           ],
@@ -192,7 +231,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Widget _buildSportPicker(BuildContext context) {
+  Widget _buildSportPicker(BuildContext context, AppLocalizations l10n) {
     final sportsAsync = ref.watch(sportsListProvider);
     final authState = ref.watch(authProvider);
     final busy = authState.isLoading || _submittingSport;
@@ -205,11 +244,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('تعذّر تحميل قائمة الرياضات', style: Theme.of(context).textTheme.bodyMedium),
+              Text(l10n.sportsLoadError, style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: () => ref.invalidate(sportsListProvider),
-                child: const Text('إعادة المحاولة'),
+                child: Text(l10n.retryButton),
               ),
             ],
           ),
@@ -221,12 +260,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 8),
-            Text('ما هي رياضتك؟', style: Theme.of(context).textTheme.headlineMedium),
+            Text(l10n.chooseSportTitle, style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 6),
-            Text(
-              'سنخصص تجربتك بالكامل حسب اختيارك — يمكنك إضافة رياضات أخرى لاحقًا',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Text(l10n.chooseSportSubtitle, style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 24),
             Expanded(
               child: GridView.builder(
@@ -253,7 +289,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       width: 22,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('إنشاء الحساب'),
+                  : Text(l10n.createAccountButton),
             ),
             const SizedBox(height: 24),
           ],
@@ -278,8 +314,9 @@ class _SportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final known = _knownSlugs.contains(sport.slug);
-    final accent = known ? SportAccent.fromKey(sport.slug).color : AppTheme.outline;
+    final accent = known ? SportAccent.fromKey(sport.slug).color : theme.colorScheme.outline;
     final icon = known ? SportAccent.fromKey(sport.slug).icon : Icons.sports_outlined;
 
     return InkWell(
@@ -288,9 +325,12 @@ class _SportCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: selected ? accent.withValues(alpha: 0.12) : AppTheme.surfaceLowest,
+          color: selected ? accent.withValues(alpha: 0.12) : theme.cardTheme.color,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: selected ? accent : AppTheme.outlineVariant, width: selected ? 2 : 1),
+          border: Border.all(
+            color: selected ? accent : theme.dividerColor,
+            width: selected ? 2 : 1,
+          ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -300,7 +340,7 @@ class _SportCard extends StatelessWidget {
             Text(
               sport.name,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
         ),
