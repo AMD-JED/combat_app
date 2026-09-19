@@ -108,7 +108,13 @@ class UserModel {
       losses: (json['losses'] as num?)?.toInt() ?? 0,
       draws: (json['draws'] as num?)?.toInt() ?? 0,
       isCoach: json['is_coach'] as bool? ?? false,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      // `created_at` is absent from the lightweight sender object the
+      // WebSocket sends with each message (`_msg_to_dict` in
+      // `messages.py` only includes id/username/full_name/avatar_url) —
+      // fall back instead of crashing the whole socket handler over a
+      // field that's meaningless in that context anyway.
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
+          DateTime.now(),
       email: json['email'] as String?,
       isActive: json['is_active'] as bool?,
       isVerified: json['is_verified'] as bool?,

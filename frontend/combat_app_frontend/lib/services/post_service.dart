@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import '../core/api_client.dart';
 import '../core/api_exception.dart';
 import '../core/constants.dart';
+import '../core/multipart_helper.dart';
 import '../models/comment_model.dart';
 import '../models/post_model.dart';
 
@@ -86,17 +87,44 @@ class PostService {
   /// Uploads an image file for a post and returns the media URL
   Future<String> uploadPostImage(XFile file) async {
     try {
-      final bytes = await file.readAsBytes();
       final formData = FormData.fromMap({
-        'file': MultipartFile.fromBytes(
-          bytes,
-          filename: file.name.isNotEmpty ? file.name : 'upload.jpg',
-        ),
+        'file': await multipartFromXFile(file),
       });
 
       final response = await _dio.post(
         ApiConfig.uploadPostImage,
         data: formData,
+      );
+
+      return response.data['url'] as String;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Uploads a video file for a post and returns the media URL.
+  /// The backend also returns a `thumbnail_url` (Cloudinary auto-generates
+  /// one at the 1s mark), but the `posts` table only has one `media_url`
+  /// column today, so there's nowhere to persist it yet — the feed shows a
+  /// generic video placeholder until that's added.
+  ///
+  /// Uses a much longer timeout than the shared 15s default: the endpoint
+  /// waits on Cloudinary's transcode before responding, and a 200MB video
+  /// (the backend's own limit) can easily take longer than that on an
+  /// ordinary connection.
+  Future<String> uploadPostVideo(XFile file) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await multipartFromXFile(file),
+      });
+
+      final response = await _dio.post(
+        ApiConfig.uploadPostVideo,
+        data: formData,
+        options: Options(
+          sendTimeout: const Duration(minutes: 5),
+          receiveTimeout: const Duration(minutes: 5),
+        ),
       );
 
       return response.data['url'] as String;

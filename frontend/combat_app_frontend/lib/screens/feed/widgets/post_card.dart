@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme.dart';
 import '../../../models/post_model.dart';
 import '../../../providers/auth_provider.dart';
@@ -121,21 +122,24 @@ class PostCard extends ConsumerWidget {
             // Media Preview
             if (post.mediaUrl != null && post.mediaUrl!.isNotEmpty) ...[
               const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  post.mediaUrl!,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 150,
-                    color: AppTheme.surface,
-                    child: const Center(
-                      child: Icon(Icons.broken_image, color: AppTheme.textMuted, size: 40),
+              if (post.postType == PostType.video)
+                _VideoAttachment(url: post.mediaUrl!)
+              else
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    post.mediaUrl!,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 150,
+                      color: AppTheme.surface,
+                      child: const Center(
+                        child: Icon(Icons.broken_image, color: AppTheme.textMuted, size: 40),
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
 
             const SizedBox(height: 14),
@@ -209,6 +213,41 @@ class PostCard extends ConsumerWidget {
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A tappable placeholder for a video post. There's no in-app player yet —
+/// the `posts` table has nowhere to store the thumbnail Cloudinary already
+/// generates, and a real inline player is a bigger lift (video_player +
+/// buffering/controls) than this fix covers — so this opens the raw
+/// Cloudinary MP4 URL externally instead of showing a broken image.
+class _VideoAttachment extends StatelessWidget {
+  final String url;
+  const _VideoAttachment({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      child: Container(
+        height: 150,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.play_circle_fill, color: accent, size: 44),
+            const SizedBox(height: 8),
+            const Text('اضغط لتشغيل الفيديو', style: TextStyle(color: AppTheme.textMuted)),
           ],
         ),
       ),

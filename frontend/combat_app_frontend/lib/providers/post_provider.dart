@@ -87,18 +87,24 @@ class FeedNotifier extends StateNotifier<FeedState> {
     String? content,
     PostType postType = PostType.text,
     XFile? imageFile,
+    XFile? videoFile,
     String? tags,
   }) async {
     state = state.copyWith(isPosting: true, clearError: true);
     try {
       String? mediaUrl;
-      if (imageFile != null) {
+      PostType resolvedType = postType;
+      if (videoFile != null) {
+        mediaUrl = await _postService.uploadPostVideo(videoFile);
+        resolvedType = PostType.video;
+      } else if (imageFile != null) {
         mediaUrl = await _postService.uploadPostImage(imageFile);
+        resolvedType = PostType.image;
       }
 
       final newPost = await _postService.createPost(
         content: content,
-        postType: imageFile != null ? PostType.image : postType,
+        postType: resolvedType,
         mediaUrl: mediaUrl,
         tags: tags,
       );

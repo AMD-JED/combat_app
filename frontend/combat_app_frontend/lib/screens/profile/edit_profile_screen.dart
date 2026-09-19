@@ -71,7 +71,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     setState(() => _isUploadingAvatar = true);
     try {
-      final url = await _uploadService.uploadAvatar(picked.path);
+      final url = await _uploadService.uploadAvatar(picked);
       setState(() => _avatarUrlOverride = url);
     } catch (e) {
       if (mounted) {

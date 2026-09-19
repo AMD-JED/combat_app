@@ -13,6 +13,7 @@ dependencies:
 
   # Networking
   dio: ^5.4.3+1
+  http_parser: ^4.1.2
 
   # State management
   flutter_riverpod: ^2.5.1
@@ -25,6 +26,7 @@ dependencies:
 
   # Avatar picking & upload
   image_picker: ^1.1.2
+  url_launcher: ^6.3.1
 
   # Cached network images (avatars, etc.)
   cached_network_image: ^3.3.1

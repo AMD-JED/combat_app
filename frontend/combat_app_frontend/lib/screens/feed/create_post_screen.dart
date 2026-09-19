@@ -16,7 +16,15 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   final TextEditingController _contentController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedImage;
+  XFile? _selectedVideo;
   PostType _selectedType = PostType.text;
+
+  // "workout" exists on PostType for forward-compatibility with V8
+  // (Training & AI Coach), but the backend's own PostType enum only
+  // accepts text/image/video today (see app/models/post.py) — offering it
+  // here would let someone pick a type the API will reject. Only show
+  // what's actually wired end-to-end.
+  static const _availableTypes = [PostType.text, PostType.image, PostType.video];
 
   @override
   void dispose() {
@@ -33,16 +41,29 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     if (image != null) {
       setState(() {
         _selectedImage = image;
+        _selectedVideo = null;
         _selectedType = PostType.image;
+      });
+    }
+  }
+
+  Future<void> _pickVideo() async {
+    final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
+
+    if (video != null) {
+      setState(() {
+        _selectedVideo = video;
+        _selectedImage = null;
+        _selectedType = PostType.video;
       });
     }
   }
 
   Future<void> _submitPost() async {
     final content = _contentController.text.trim();
-    if (content.isEmpty && _selectedImage == null) {
+    if (content.isEmpty && _selectedImage == null && _selectedVideo == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء كتابة نص أو إرفاق صورة أولاً')),
+        const SnackBar(content: Text('الرجاء كتابة نص أو إرفاق صورة/فيديو أولاً')),
       );
       return;
     }
@@ -51,6 +72,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           content: content.isNotEmpty ? content : null,
           postType: _selectedType,
           imageFile: _selectedImage,
+          videoFile: _selectedVideo,
         );
 
     if (mounted && success) {
@@ -99,7 +121,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: PostType.values.map((type) {
+                children: _availableTypes.map((type) {
                   final isSelected = _selectedType == type;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
@@ -109,9 +131,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                             ? 'منشور'
                             : type == PostType.image
                                 ? 'صورة'
-                                : type == PostType.video
-                                    ? 'فيديو'
-                                    : 'تمرين',
+                                : 'فيديو',
                         style: TextStyle(
                           color: isSelected ? Colors.white : AppTheme.textMuted,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -121,7 +141,15 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                       selectedColor: accent,
                       backgroundColor: AppTheme.surface,
                       onSelected: (selected) {
-                        if (selected) setState(() => _selectedType = type);
+                        if (!selected) return;
+                        setState(() {
+                          _selectedType = type;
+                          // Switching type away from what's attached clears
+                          // the mismatched attachment instead of silently
+                          // keeping e.g. a picked video while "صورة" shows.
+                          if (type != PostType.image) _selectedImage = null;
+                          if (type != PostType.video) _selectedVideo = null;
+                        });
                       },
                     ),
                   );
@@ -191,17 +219,83 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               const SizedBox(height: 16),
             ],
 
-            // Add Image Button
-            OutlinedButton.icon(
-              onPressed: _pickImage,
-              icon: const Icon(Icons.photo_library, color: AppTheme.gold),
-              label: const Text('إضافة صورة', style: TextStyle(color: AppTheme.gold)),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppTheme.gold),
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            // Video preview if picked — no inline player yet (the backend
+            // has nowhere to store the auto-generated thumbnail today), so
+            // this just confirms what's attached rather than pretending to
+            // play it back.
+            if (_selectedVideo != null) ...[
+              Stack(
+                children: [
+                  Container(
+                    height: 140,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppTheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.videocam, color: accent, size: 32),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            _selectedVideo!.name,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: AppTheme.textMuted),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.black.withValues(alpha: 0.6),
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () {
+                          setState(() {
+                            _selectedVideo = null;
+                            _selectedType = PostType.text;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 16),
+            ],
+
+            // Add Image/Video button — action matches whichever pill is
+            // selected; hidden for a plain text post.
+            if (_selectedType == PostType.image)
+              OutlinedButton.icon(
+                onPressed: _pickImage,
+                icon: const Icon(Icons.photo_library, color: AppTheme.gold),
+                label: const Text('إضافة صورة', style: TextStyle(color: AppTheme.gold)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppTheme.gold),
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              )
+            else if (_selectedType == PostType.video)
+              OutlinedButton.icon(
+                onPressed: _pickVideo,
+                icon: const Icon(Icons.videocam, color: AppTheme.gold),
+                label: const Text('إضافة فيديو', style: TextStyle(color: AppTheme.gold)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppTheme.gold),
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
           ],
         ),
       ),

@@ -140,6 +140,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
       }
     }
 
+    // Real server IDs are only ever positive — a duplicate delivery of the
+    // same message (e.g. a double broadcast) would otherwise pass the
+    // optimistic-replace check above (no pending entry left) and get
+    // appended a second time. This is the actual dedup: skip anything
+    // whose id we've already rendered, independent of whatever caused the
+    // repeat delivery.
+    if (incoming.id > 0 && list.any((m) => m.id == incoming.id)) return;
+
     list.add(incoming);
     state = state.copyWith(messages: list);
 

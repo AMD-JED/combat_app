@@ -23,26 +23,26 @@ class SettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
           _SectionHeader(title: l10n.appearanceSection),
-          RadioListTile<ThemeMode>(
-            title: Text(l10n.themeSystem),
-            value: ThemeMode.system,
+          RadioGroup<ThemeMode>(
             groupValue: themeMode,
             onChanged: (mode) =>
                 ref.read(themeModeProvider.notifier).setThemeMode(mode!),
-          ),
-          RadioListTile<ThemeMode>(
-            title: Text(l10n.themeLight),
-            value: ThemeMode.light,
-            groupValue: themeMode,
-            onChanged: (mode) =>
-                ref.read(themeModeProvider.notifier).setThemeMode(mode!),
-          ),
-          RadioListTile<ThemeMode>(
-            title: Text(l10n.themeDark),
-            value: ThemeMode.dark,
-            groupValue: themeMode,
-            onChanged: (mode) =>
-                ref.read(themeModeProvider.notifier).setThemeMode(mode!),
+            child: Column(
+              children: [
+                RadioListTile<ThemeMode>(
+                  title: Text(l10n.themeSystem),
+                  value: ThemeMode.system,
+                ),
+                RadioListTile<ThemeMode>(
+                  title: Text(l10n.themeLight),
+                  value: ThemeMode.light,
+                ),
+                RadioListTile<ThemeMode>(
+                  title: Text(l10n.themeDark),
+                  value: ThemeMode.dark,
+                ),
+              ],
+            ),
           ),
           const Divider(height: 32),
           _SectionHeader(title: l10n.languageSection),
@@ -50,26 +50,26 @@ class SettingsScreen extends ConsumerWidget {
           // of the app's current language (same convention iOS/Android use
           // in their own language pickers), so these three are not run
           // through AppLocalizations.
-          RadioListTile<Locale>(
-            title: const Text('العربية'),
-            value: const Locale('ar'),
+          RadioGroup<Locale>(
             groupValue: locale,
             onChanged: (value) =>
                 ref.read(localeProvider.notifier).setLocale(value!),
-          ),
-          RadioListTile<Locale>(
-            title: const Text('Français'),
-            value: const Locale('fr'),
-            groupValue: locale,
-            onChanged: (value) =>
-                ref.read(localeProvider.notifier).setLocale(value!),
-          ),
-          RadioListTile<Locale>(
-            title: const Text('English'),
-            value: const Locale('en'),
-            groupValue: locale,
-            onChanged: (value) =>
-                ref.read(localeProvider.notifier).setLocale(value!),
+            child: const Column(
+              children: [
+                RadioListTile<Locale>(
+                  title: Text('العربية'),
+                  value: Locale('ar'),
+                ),
+                RadioListTile<Locale>(
+                  title: Text('Français'),
+                  value: Locale('fr'),
+                ),
+                RadioListTile<Locale>(
+                  title: Text('English'),
+                  value: Locale('en'),
+                ),
+              ],
+            ),
           ),
         ],
       ),
