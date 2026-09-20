@@ -164,10 +164,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   CircleAvatar(
                     radius: 52,
                     backgroundColor: AppTheme.surface,
-                    backgroundImage:
-                        avatarUrl != null ? CachedNetworkImageProvider(avatarUrl) : null,
+                    backgroundImage: avatarUrl != null
+                        ? CachedNetworkImageProvider(avatarUrl)
+                        : null,
                     child: avatarUrl == null
-                        ? const Icon(Icons.person, size: 52, color: AppTheme.textMuted)
+                        ? const Icon(Icons.person,
+                            size: 52, color: AppTheme.textMuted)
                         : null,
                   ),
                   Positioned(
@@ -185,7 +187,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: Colors.white),
                               )
-                            : const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                            : const Icon(Icons.camera_alt,
+                                size: 16, color: Colors.white),
                       ),
                     ),
                   ),
@@ -196,13 +199,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             TextFormField(
               controller: _fullNameController,
               decoration: const InputDecoration(labelText: 'الاسم الكامل'),
-              validator: (v) => (v == null || v.trim().length < 2)
-                  ? 'الاسم قصير جدًا'
-                  : null,
+              validator: (v) =>
+                  (v == null || v.trim().length < 2) ? 'الاسم قصير جدًا' : null,
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<SportType>(
-              value: _sportType,
+              initialValue: _sportType,
               decoration: const InputDecoration(labelText: 'الرياضة'),
               items: SportType.values
                   .map((s) => DropdownMenuItem(value: s, child: Text(s.value)))
@@ -211,7 +213,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<WeightClass>(
-              value: _weightClass,
+              initialValue: _weightClass,
               decoration: const InputDecoration(labelText: 'فئة الوزن'),
               items: WeightClass.values
                   .map((w) => DropdownMenuItem(value: w, child: Text(w.value)))

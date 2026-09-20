@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/theme.dart';
 
 /// Shown momentarily on app start while [AuthNotifier] checks for a stored
 /// token and (if present) fetches the current user. The router's redirect
@@ -28,7 +27,8 @@ class SplashScreen extends StatelessWidget {
               child: Icon(Icons.bolt_rounded, size: 44, color: accent),
             ),
             const SizedBox(height: 20),
-            Text('Athletes Hub', style: Theme.of(context).textTheme.headlineMedium),
+            Text('Athletes Hub',
+                style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 6),
             Text(
               'شبكة الرياضيين الاجتماعية',
