@@ -60,12 +60,31 @@ class PostService {
     }
   }
 
-  /// Toggles like status for a post
-  Future<bool> toggleLike(int postId) async {
+  /// Sets, switches or clears the current user's reaction on a post
+  /// (`POST /posts/{id}/react`, backend v5). Sending the type the user
+  /// already has removes it (toggle off); a different type switches it.
+  /// Returns the backend's action: `added`, `updated` or `removed`.
+  Future<String> reactToPost(int postId, ReactionType reaction) async {
     try {
-      final response = await _dio.post(ApiConfig.toggleLike(postId));
-      final action = response.data['action'] as String?;
-      return action == 'liked';
+      final response = await _dio.post(
+        ApiConfig.postReact(postId),
+        data: {'reaction_type': reaction.value},
+      );
+      return (response.data['action'] as String?) ?? '';
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Lists a post's comments, newest first (`GET /posts/{id}/comments`).
+  Future<List<CommentModel>> getComments(int postId, {int skip = 0, int limit = 50}) async {
+    try {
+      final response = await _dio.get(
+        ApiConfig.postComments(postId),
+        queryParameters: {'skip': skip, 'limit': limit},
+      );
+      final List<dynamic> data = response.data as List<dynamic>;
+      return data.map((json) => CommentModel.fromJson(json as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
@@ -75,7 +94,7 @@ class PostService {
   Future<CommentModel> addComment(int postId, String content) async {
     try {
       final response = await _dio.post(
-        ApiConfig.addComment(postId),
+        ApiConfig.postComments(postId),
         data: {'content': content},
       );
       return CommentModel.fromJson(response.data as Map<String, dynamic>);

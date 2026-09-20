@@ -32,6 +32,7 @@ class ApiConfig {
   // Users
   static const String usersSearch = '/users/search';
   static String userProfile(String username) => '/users/$username';
+  static String userFollowing(int userId) => '/users/$userId/following';
   static const String updateMe = '/users/me';
   static String toggleFollow(int userId) => '/users/$userId/follow';
 
@@ -44,8 +45,8 @@ class ApiConfig {
   static const String postsFeed = '/posts/feed';
   static const String createPost = '/posts/';
   static String deletePost(int id) => '/posts/$id';
-  static String toggleLike(int id) => '/posts/$id/like';
-  static String addComment(int id) => '/posts/$id/comments';
+  static String postReact(int id) => '/posts/$id/react';
+  static String postComments(int id) => '/posts/$id/comments';
 
   // Messages (Direct Messaging)
   static const String conversations = '/messages/conversations';

@@ -18,6 +18,32 @@ enum PostType {
   }
 }
 
+/// Mirrors `app/models/post.py::ReactionType` (backend v5) and
+/// `ReactionType` in the React prototype's `src/types.ts`. `value` is exactly
+/// what the API sends/expects (`POST /posts/{id}/react`).
+///
+/// The declaration order is also the display order of the reactions bar.
+enum ReactionType {
+  respect('respect'),
+  fire('fire'),
+  strength('strength'),
+  precision('precision'),
+  champion('champion'),
+  sport('sport');
+
+  final String value;
+  const ReactionType(this.value);
+
+  static ReactionType? fromString(String? raw) {
+    if (raw == null) return null;
+    final lower = raw.toLowerCase();
+    for (final reaction in ReactionType.values) {
+      if (reaction.value == lower) return reaction;
+    }
+    return null;
+  }
+}
+
 class PostModel {
   final int id;
   final String? content;
@@ -25,10 +51,20 @@ class PostModel {
   final PostType postType;
   final String? tags;
   final UserModel author;
+
+  /// Total number of reactions of any type (the backend keeps this field
+  /// under its old "likes" name for backward compatibility).
   final int likesCount;
   final int commentsCount;
   final DateTime createdAt;
   final bool isLikedByMe;
+
+  /// Per-type counters (`reaction_counts`). The backend always sends all six
+  /// keys; a missing key is simply treated as 0.
+  final Map<ReactionType, int> reactionCounts;
+
+  /// The current user's single reaction on this post (`user_reaction`).
+  final ReactionType? userReaction;
 
   const PostModel({
     required this.id,
@@ -41,9 +77,22 @@ class PostModel {
     required this.commentsCount,
     required this.createdAt,
     this.isLikedByMe = false,
+    this.reactionCounts = const {},
+    this.userReaction,
   });
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
+    final counts = <ReactionType, int>{};
+    final rawCounts = json['reaction_counts'];
+    if (rawCounts is Map) {
+      rawCounts.forEach((key, value) {
+        final type = ReactionType.fromString(key as String?);
+        if (type != null) counts[type] = (value as num?)?.toInt() ?? 0;
+      });
+    }
+
+    final userReaction = ReactionType.fromString(json['user_reaction'] as String?);
+
     return PostModel(
       id: json['id'] as int,
       content: json['content'] as String?,
@@ -54,8 +103,18 @@ class PostModel {
       likesCount: (json['likes_count'] as num?)?.toInt() ?? 0,
       commentsCount: (json['comments_count'] as num?)?.toInt() ?? 0,
       createdAt: DateTime.parse(json['created_at'] as String),
-      isLikedByMe: json['is_liked_by_me'] as bool? ?? false,
+      isLikedByMe: json['is_liked_by_me'] as bool? ?? userReaction != null,
+      reactionCounts: counts,
+      userReaction: userReaction,
     );
+  }
+
+  /// Reactions that have at least one vote, most popular first — used for the
+  /// little overlapping emoji bubbles in the post card's stats row.
+  List<MapEntry<ReactionType, int>> get topReactions {
+    final entries = reactionCounts.entries.where((e) => e.value > 0).toList();
+    entries.sort((a, b) => b.value.compareTo(a.value));
+    return entries;
   }
 
   PostModel copyWith({
@@ -66,6 +125,9 @@ class PostModel {
     int? likesCount,
     int? commentsCount,
     bool? isLikedByMe,
+    Map<ReactionType, int>? reactionCounts,
+    ReactionType? userReaction,
+    bool clearUserReaction = false,
   }) {
     return PostModel(
       id: id,
@@ -78,6 +140,8 @@ class PostModel {
       commentsCount: commentsCount ?? this.commentsCount,
       createdAt: createdAt,
       isLikedByMe: isLikedByMe ?? this.isLikedByMe,
+      reactionCounts: reactionCounts ?? this.reactionCounts,
+      userReaction: clearUserReaction ? null : (userReaction ?? this.userReaction),
     );
   }
 }

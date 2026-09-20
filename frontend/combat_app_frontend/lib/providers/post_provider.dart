@@ -120,32 +120,68 @@ class FeedNotifier extends StateNotifier<FeedState> {
     }
   }
 
-  Future<void> toggleLike(int postId) async {
+  /// Applies [reaction] to a post the way the backend does
+  /// (`POST /posts/{id}/react`): no previous reaction -> add it; the same
+  /// type again -> remove it (toggle off); a different type -> switch.
+  /// The UI updates optimistically and rolls back if the request fails.
+  Future<void> react(int postId, ReactionType reaction) async {
     final index = state.posts.indexWhere((p) => p.id == postId);
     if (index == -1) return;
 
     final post = state.posts[index];
-    final newLikedState = !post.isLikedByMe;
-    final newLikesCount = newLikedState ? post.likesCount + 1 : (post.likesCount - 1).clamp(0, 999999);
+    final previous = post.userReaction;
 
-    // Optimistic update
-    final updatedPost = post.copyWith(
-      isLikedByMe: newLikedState,
-      likesCount: newLikesCount,
+    final counts = Map<ReactionType, int>.from(post.reactionCounts);
+    var total = post.likesCount;
+    ReactionType? next;
+
+    if (previous == reaction) {
+      // Toggle off.
+      counts[reaction] = _decrement(counts[reaction] ?? 0);
+      total = _decrement(total);
+      next = null;
+    } else {
+      if (previous != null) {
+        // Switching type: the total stays the same.
+        counts[previous] = _decrement(counts[previous] ?? 0);
+      } else {
+        total += 1;
+      }
+      counts[reaction] = (counts[reaction] ?? 0) + 1;
+      next = reaction;
+    }
+
+    _replacePost(
+      post.copyWith(
+        reactionCounts: counts,
+        likesCount: total,
+        userReaction: next,
+        clearUserReaction: next == null,
+        isLikedByMe: next != null,
+      ),
     );
 
-    final updatedPosts = List<PostModel>.from(state.posts);
-    updatedPosts[index] = updatedPost;
-    state = state.copyWith(posts: updatedPosts);
-
     try {
-      await _postService.toggleLike(postId);
+      await _postService.reactToPost(postId, reaction);
     } catch (_) {
-      // Rollback on error
-      updatedPosts[index] = post;
-      state = state.copyWith(posts: updatedPosts);
+      // Rollback on error.
+      _replacePost(post);
     }
   }
+
+  int _decrement(int value) => value > 0 ? value - 1 : 0;
+
+  void _replacePost(PostModel updated) {
+    final index = state.posts.indexWhere((p) => p.id == updated.id);
+    if (index == -1) return;
+    final posts = List<PostModel>.from(state.posts);
+    posts[index] = updated;
+    state = state.copyWith(posts: posts);
+  }
+
+  /// Comments of a post, newest first. Errors are rethrown so the comments
+  /// drawer can show its own retry state.
+  Future<List<CommentModel>> fetchComments(int postId) => _postService.getComments(postId);
 
   Future<CommentModel?> addComment(int postId, String content) async {
     try {

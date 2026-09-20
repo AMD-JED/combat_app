@@ -49,5 +49,91 @@
   "retryButton": "Retry",
   "createAccountButton": "Create account",
   "alreadyHaveAccountPrompt": "Already have an account? Log in",
-  "sportSaveFailedNotice": "Account created, but couldn't save your sport. You can add it later from your profile."
+  "sportSaveFailedNotice": "Account created, but couldn't save your sport. You can add it later from your profile.",
+  "feedTab": "Feed",
+  "searchTab": "Search",
+  "messagesTab": "Messages",
+  "profileTab": "Profile",
+  "searchHint": "Search by name or username...",
+  "searchEmptyPrompt": "Search for other athletes to follow",
+  "searchNoResults": "No results",
+  "messageButton": "Message",
+  "followButton": "Follow",
+  "followingButton": "Following",
+  "winsLabel": "Wins",
+  "lossesLabel": "Losses",
+  "drawsLabel": "Draws",
+  "coachBadge": "Coach",
+  "sportLabel": "Sport",
+  "weightLabel": "Weight",
+  "beltRankLabel": "Belt/Rank",
+  "gymLabel": "Gym",
+  "locationLabel": "Location",
+  "feedLoadError": "Couldn't load your feed",
+  "feedEmptyTitle": "No posts in your feed yet",
+  "feedEmptySubtitle": "Create your first post or follow other athletes!",
+  "composerHint": "Share a workout, a sparring...",
+  "composerMediaTooltip": "Add a photo or video",
+  "likeAction": "Like",
+  "commentAction": "Comment",
+  "commentsCount": "{count, plural, =0{No comments} =1{1 comment} other{{count} comments}}",
+  "@commentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commentsEmpty": "Be the first to cheer this on!",
+  "commentHint": "Write an encouraging comment...",
+  "commentsLoadError": "Couldn't load comments",
+  "postDeleteAction": "Delete post",
+  "postDeleteConfirmTitle": "Delete this post?",
+  "postDeleteConfirmBody": "This action can't be undone.",
+  "cancelButton": "Cancel",
+  "deleteButton": "Delete",
+  "reactionRespect": "Respect",
+  "reactionFire": "Fire",
+  "reactionStrength": "Beast",
+  "reactionPrecision": "Precision",
+  "reactionChampion": "Champion",
+  "reactionSportCombat": "Warrior",
+  "reactionSportFootball": "Scorer",
+  "reactionSportRunning": "Sprinter",
+  "timeNow": "Just now",
+  "timeMinutes": "{count} min ago",
+  "@timeMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeHours": "{count} h ago",
+  "@timeHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeDays": "{count} d ago",
+  "@timeDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "videoTapToPlay": "Tap to play the video",
+  "newPostTitle": "New post",
+  "postHint": "Share your session, results, a sparring or a tip...",
+  "addMediaLabel": "Add media",
+  "addPhoto": "Photo",
+  "addVideo": "Video",
+  "publishButton": "PUBLISH",
+  "postEmptyError": "Write something or attach a photo or video first",
+  "postPublished": "Post published!",
+  "postFailed": "Couldn't publish your post",
+  "postUploadingVideoNote": "Uploading your video — this can take a while..."
 }
