@@ -77,3 +77,15 @@ class PostRepository(BaseRepository[Post]):
         await self.db.refresh(comment)
         return comment
 
+    async def get_comments(self, post_id: int, skip: int = 0, limit: int = 50) -> List[Comment]:
+        """Comments of a post, newest first (id breaks created_at ties so the
+        order is deterministic when several land within the same second)."""
+        result = await self.db.execute(
+            select(Comment)
+            .options(selectinload(Comment.author))
+            .where(Comment.post_id == post_id)
+            .order_by(Comment.created_at.desc(), Comment.id.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        return list(result.scalars().all())

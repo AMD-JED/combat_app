@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.post import Post, PostReaction, ReactionType
 from app.repositories.post_repository import PostRepository
 from app.repositories.user_repository import UserRepository
+from app.services import notification_service
 from app.schemas.post import (
     PostCreate,
     PostResponse,
@@ -137,6 +138,22 @@ async def react_to_post(
 
     action = await repo.react_to_post(current_user.id, post_id, payload.reaction_type)
     await db.commit()
+
+    # v10 — notify the post's author, but never for reacting to your own
+    # post, and never let a push failure affect this endpoint's result
+    # (see notification_service.create_and_push docstring).
+    if action == "added" and post.author_id != current_user.id:
+        await notification_service.create_and_push(
+            db,
+            recipient_id=post.author_id,
+            type="reaction",
+            title="New reaction",
+            body=f"{current_user.username} reacted {payload.reaction_type.value} to your post",
+            actor_id=current_user.id,
+            data={"post_id": post_id, "reaction_type": payload.reaction_type.value},
+        )
+        await db.commit()
+
     return {"action": action, "post_id": post_id, "reaction_type": payload.reaction_type.value}
 
 
@@ -167,6 +184,29 @@ async def toggle_like(
     return {"action": "liked" if liked else "unliked", "post_id": post_id}
 
 
+@router.get("/{post_id}/comments", response_model=List[CommentResponse])
+async def get_post_comments(
+    post_id: int,
+    skip: int = 0,
+    limit: int = 50,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List a post's comments, NEWEST FIRST (deliberately the opposite of
+    GET /reels/{id}/comments, which is oldest-first): the Athletes Hub post
+    card shows the latest comment on top and prepends new ones, and with
+    skip/limit paging "newest first" is what makes "load more" load the
+    older ones.
+    """
+    repo = PostRepository(db)
+    post = await repo.get_by_id(post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    return await repo.get_comments(post_id, skip=skip, limit=limit)
+
+
 @router.post("/{post_id}/comments", response_model=CommentResponse, status_code=201)
 async def add_comment(
     post_id: int,
@@ -183,4 +223,17 @@ async def add_comment(
     await db.commit()
     await db.refresh(comment)
     comment.author = current_user
+
+    if post.author_id != current_user.id:
+        await notification_service.create_and_push(
+            db,
+            recipient_id=post.author_id,
+            type="comment",
+            title="New comment",
+            body=f"{current_user.username} commented on your post",
+            actor_id=current_user.id,
+            data={"post_id": post_id, "comment_id": comment.id},
+        )
+        await db.commit()
+
     return comment
