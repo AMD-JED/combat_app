@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/theme.dart';
+
+import '../l10n/app_localizations.dart';
 import '../providers/conversations_provider.dart';
 import '../providers/sports_provider.dart';
 import 'feed/feed_screen.dart';
 import 'messages/conversations_screen.dart';
 import 'profile/profile_screen.dart';
+import 'search/search_screen.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
   const MainNavigationScreen({super.key});
@@ -17,8 +19,10 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   int _selectedIndex = 0;
 
+  // Order matches the NavigationDestinations below.
   final List<Widget> _screens = const [
     FeedScreen(),
+    SearchScreen(),
     ConversationsScreen(),
     ProfileScreen(),
   ];
@@ -36,8 +40,11 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final totalUnread = ref.watch(conversationsProvider).totalUnread;
-    final accent = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
+    final muted = theme.colorScheme.onSurfaceVariant;
 
     return Scaffold(
       body: IndexedStack(
@@ -49,20 +56,25 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         onDestinationSelected: (index) {
           setState(() => _selectedIndex = index);
         },
-        backgroundColor: AppTheme.surfaceLowest,
+        backgroundColor: theme.cardTheme.color,
         indicatorColor: accent.withValues(alpha: 0.15),
         destinations: [
           NavigationDestination(
-            icon: Icon(Icons.dynamic_feed_outlined, color: AppTheme.textMuted),
+            icon: Icon(Icons.dynamic_feed_outlined, color: muted),
             selectedIcon: Icon(Icons.dynamic_feed, color: accent),
-            label: 'التغذية',
+            label: l10n.feedTab,
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.search_outlined, color: muted),
+            selectedIcon: Icon(Icons.search, color: accent),
+            label: l10n.searchTab,
           ),
           NavigationDestination(
             icon: Badge(
               isLabelVisible: totalUnread > 0,
               label: Text('$totalUnread'),
               backgroundColor: accent,
-              child: Icon(Icons.chat_bubble_outline, color: AppTheme.textMuted),
+              child: Icon(Icons.chat_bubble_outline, color: muted),
             ),
             selectedIcon: Badge(
               isLabelVisible: totalUnread > 0,
@@ -70,12 +82,12 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               backgroundColor: accent,
               child: Icon(Icons.chat_bubble, color: accent),
             ),
-            label: 'الرسائل',
+            label: l10n.messagesTab,
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline, color: AppTheme.textMuted),
+            icon: Icon(Icons.person_outline, color: muted),
             selectedIcon: Icon(Icons.person, color: accent),
-            label: 'الملف الشخصي',
+            label: l10n.profileTab,
           ),
         ],
       ),

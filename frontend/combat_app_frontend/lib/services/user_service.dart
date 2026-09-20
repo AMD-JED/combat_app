@@ -68,4 +68,33 @@ class UserService {
       throw ApiException.fromDioError(e);
     }
   }
+
+  /// GET /users/{id}/following → List<UserPublicResponse>
+  /// `UserPublicResponse` has no `is_following` flag of its own, so this is
+  /// how the app determines whether the signed-in user already follows
+  /// someone: fetch their own following list and check for the target id.
+  Future<List<UserModel>> getFollowing(int userId) async {
+    try {
+      final response = await _dio.get(ApiConfig.userFollowing(userId));
+      return (response.data as List)
+          .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// POST /users/{id}/follow → {"action": "followed"|"unfollowed", ...}
+  /// A pure toggle on the backend — it flips whatever the current state is
+  /// rather than taking an explicit follow/unfollow intent, so the caller
+  /// must already know which state it's in (see [getFollowing]) and reads
+  /// the returned `action` back to confirm what actually happened.
+  Future<String> toggleFollow(int userId) async {
+    try {
+      final response = await _dio.post(ApiConfig.toggleFollow(userId));
+      return response.data['action'] as String;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }
