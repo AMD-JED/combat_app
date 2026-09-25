@@ -101,3 +101,37 @@ async def db_session():
     async with TestingSessionLocal() as session:
         yield session
         await session.commit()
+
+
+
+
+
+# 4b. Fixture مطابقة تمامًا لـ get_db() الحقيقية في database.py (بلا commit
+#     تلقائي بعد yield) — على عكس فيكستشر `client` أعلاه، التي تُنجّح أي
+#     endpoint ينسى استدعاء db.commit() لأنها تُنفّذه هي بدلاً عنه. هذا يُخفي
+#     تمامًا أي عطل من نوع "الكتابة تُرجع 200 لكنها لا تُحفظ فعليًا" (بالضبط
+#     ما وقع في open_conversation/mark_read/delete_message في messages.py).
+#     استخدم strict_client بدل client في أي اختبار يتحقق من بقاء التغيير بعد
+#     انتهاء الطلب (وليس فقط في استجابته المباشرة).
+@pytest_asyncio.fixture
+async def strict_client():
+    async def override_get_db_strict():
+        async with TestingSessionLocal() as session:
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
+
+    app.dependency_overrides[get_db] = override_get_db_strict
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
+
+    app.dependency_overrides.clear()
+
+
+
+

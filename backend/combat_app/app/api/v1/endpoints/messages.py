@@ -116,6 +116,7 @@ async def open_conversation(
 
     conv_repo = ConversationRepository(db)
     conv, created = await conv_repo.get_or_create(current_user.id, user_id)
+    await db.commit()
     return {"conversation_id": conv.id, "created": created}
 
 
@@ -198,6 +199,7 @@ async def mark_read(
 
     msg_repo = MessageRepository(db)
     count = await msg_repo.mark_read(conversation_id, current_user.id)
+    await db.commit()
     return {"marked_read": count}
 
 
@@ -212,6 +214,7 @@ async def delete_message(
     deleted = await msg_repo.soft_delete(message_id, current_user.id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Message not found or already deleted")
+    await db.commit()
 
 
 # ──────────────────────────────────────────────
