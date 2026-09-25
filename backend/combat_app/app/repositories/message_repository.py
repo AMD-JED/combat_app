@@ -97,7 +97,14 @@ class MessageRepository(BaseRepository[Message]):
             select(Message)
             .options(selectinload(Message.sender))
             .where(Message.conversation_id == conversation_id)
-            .order_by(Message.created_at.desc())   # newest first, client reverses
+            # newest first, client reverses. `id.desc()` breaks ties: SQLite's
+            # `created_at` (func.now()) only has whole-second resolution, so
+            # two messages sent within the same second compare equal and
+            # ORDER BY created_at alone leaves their relative order
+            # undefined -- which silently picks the WRONG one as "the last
+            # message" for the conversations-list preview (limit=1) whenever
+            # that happens to land on the older row.
+            .order_by(Message.created_at.desc(), Message.id.desc())
             .offset(skip)
             .limit(limit)
         )
