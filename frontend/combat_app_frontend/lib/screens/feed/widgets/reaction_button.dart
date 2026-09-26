@@ -93,7 +93,11 @@ class _ReactionButtonState extends State<ReactionButton> {
               showWhenUnlinked: false,
               targetAnchor: isRtl ? Alignment.topRight : Alignment.topLeft,
               followerAnchor: isRtl ? Alignment.bottomRight : Alignment.bottomLeft,
-              offset: const Offset(0, -6),
+              // +14, not a small negative gap: _ReactionsBar adds 20px of
+              // invisible hit-test space below its visible capsule so this
+              // popup's MouseRegion overlaps the button's by ~14px, with no
+              // gap between them. See the comment on that spacer for why.
+              offset: const Offset(0, 14),
               child: Material(
                 type: MaterialType.transparency,
                 child: _ReactionsBar(
@@ -299,28 +303,46 @@ class _ReactionsBar extends StatelessWidget {
     return MouseRegion(
       onEnter: (_) => onPointerEnter(),
       onExit: (_) => onPointerExit(),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: screenWidth - 16),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: AlignmentDirectional.bottomStart,
-          child: ValueListenableBuilder<int?>(
-            valueListenable: hovered,
-            builder: (context, hoveredIndex, _) {
-              return IntrinsicWidth(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildLabel(hoveredIndex),
-                    const SizedBox(height: 4),
-                    _buildCapsule(hoveredIndex, isDark),
-                  ],
-                ),
-              );
-            },
+      // A Column, not just the ConstrainedBox: the trailing SizedBox below
+      // adds invisible height UNSCALED by the FittedBox inside, so the
+      // overlap it creates holds even when a narrow screen shrinks the
+      // visible capsule.
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: screenWidth - 16),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.bottomStart,
+              child: ValueListenableBuilder<int?>(
+                valueListenable: hovered,
+                builder: (context, hoveredIndex, _) {
+                  return IntrinsicWidth(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildLabel(hoveredIndex),
+                        const SizedBox(height: 4),
+                        _buildCapsule(hoveredIndex, isDark),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
-        ),
+          // Invisible spacer: extends this MouseRegion downward so it
+          // overlaps the reaction button underneath by design, with no gap
+          // between the two. Without this, moving the mouse from the button
+          // up into the capsule crosses a strip that belongs to neither
+          // MouseRegion, which fires this bar's onExit (closing it) and the
+          // button's onEnter (reopening it) over and over -- the flashing
+          // the reactions bar showed on hover.
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
