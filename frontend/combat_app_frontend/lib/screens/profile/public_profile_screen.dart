@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import 'widgets/profile_labels.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/message_service.dart';
@@ -218,9 +219,9 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
 
                       const SizedBox(height: 20),
                       _InfoTile(icon: Icons.sports_kabaddi, label: l10n.sportLabel,
-                          value: _user!.sportType?.value ?? '—'),
+                          value: sportTypeLabel(l10n, _user!.sportType)),
                       _InfoTile(icon: Icons.monitor_weight_outlined, label: l10n.weightLabel,
-                          value: _user!.weightClass?.value ?? '—'),
+                          value: weightClassLabel(l10n, _user!.weightClass)),
                       _InfoTile(icon: Icons.military_tech_outlined, label: l10n.beltRankLabel,
                           value: _user!.beltRank ?? '—'),
                       _InfoTile(icon: Icons.fitness_center, label: l10n.gymLabel,

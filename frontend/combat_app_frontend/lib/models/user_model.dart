@@ -57,6 +57,7 @@ class UserModel {
   final WeightClass? weightClass;
   final String? beltRank;
   final String? gymAffiliation;
+  final String? coachName;
   final String? bio;
   final String? avatarUrl;
   final String? location;
@@ -79,6 +80,7 @@ class UserModel {
     this.weightClass,
     this.beltRank,
     this.gymAffiliation,
+    this.coachName,
     this.bio,
     this.avatarUrl,
     this.location,
@@ -101,6 +103,7 @@ class UserModel {
       weightClass: WeightClass.fromString(json['weight_class'] as String?),
       beltRank: json['belt_rank'] as String?,
       gymAffiliation: json['gym_affiliation'] as String?,
+      coachName: json['coach_name'] as String?,
       bio: json['bio'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       location: json['location'] as String?,

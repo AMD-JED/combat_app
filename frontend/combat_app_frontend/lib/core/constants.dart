@@ -52,6 +52,9 @@ class ApiConfig {
   static const String conversations = '/messages/conversations';
   static String openConversation(int userId) =>
       '/messages/conversations/$userId';
+
+  // Training (read-only: recent sessions for the profile screen)
+  static const String trainingSessions = '/training/sessions';
   static String conversationMessages(int conversationId) =>
       '/messages/conversations/$conversationId/messages';
   static String markConversationRead(int conversationId) =>

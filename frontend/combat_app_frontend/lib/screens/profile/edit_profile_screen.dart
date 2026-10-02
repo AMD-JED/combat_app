@@ -4,12 +4,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../core/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/upload_service.dart';
 import '../../services/user_service.dart';
+import 'widgets/profile_labels.dart';
 
+/// Edits the signed-in athlete's own profile. A Flutter port of the
+/// prototype's edit form, adapted to what `PATCH /users/me` actually
+/// accepts: real avatar upload (Cloudinary, already wired — no fake preset
+/// gallery), the legacy single `sport_type` + `weight_class` enums (as
+/// exact dropdowns, not the prototype's slightly different mock lists),
+/// belt/rank, gym, location, bio, the coach toggle, and — newly exposed
+/// here — [UserModel.coachName]: `coach_name` was already a real, writable
+/// column and already wired into [UserService.updateProfile], it just had
+/// no field in the response schemas or this form to show/edit it.
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
@@ -26,6 +36,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late final TextEditingController _fullNameController;
   late final TextEditingController _beltRankController;
   late final TextEditingController _gymController;
+  late final TextEditingController _coachNameController;
   late final TextEditingController _bioController;
   late final TextEditingController _locationController;
 
@@ -45,6 +56,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _fullNameController = TextEditingController(text: user.fullName);
     _beltRankController = TextEditingController(text: user.beltRank ?? '');
     _gymController = TextEditingController(text: user.gymAffiliation ?? '');
+    _coachNameController = TextEditingController(text: user.coachName ?? '');
     _bioController = TextEditingController(text: user.bio ?? '');
     _locationController = TextEditingController(text: user.location ?? '');
     _sportType = user.sportType;
@@ -57,16 +69,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _fullNameController.dispose();
     _beltRankController.dispose();
     _gymController.dispose();
+    _coachNameController.dispose();
     _bioController.dispose();
     _locationController.dispose();
     super.dispose();
   }
 
   Future<void> _pickAndUploadAvatar() async {
-    final picked = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 90,
-    );
+    final picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
     if (picked == null) return;
 
     setState(() => _isUploadingAvatar = true);
@@ -75,8 +85,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       setState(() => _avatarUrlOverride = url);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     } finally {
       if (mounted) setState(() => _isUploadingAvatar = false);
@@ -96,6 +105,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         weightClass: _weightClass,
         beltRank: _beltRankController.text.trim(),
         gymAffiliation: _gymController.text.trim(),
+        coachName: _coachNameController.text.trim(),
         bio: _bioController.text.trim(),
         location: _locationController.text.trim(),
         isCoach: _isCoach,
@@ -111,6 +121,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         weightClass: updated.weightClass,
         beltRank: updated.beltRank,
         gymAffiliation: updated.gymAffiliation,
+        coachName: updated.coachName,
         bio: updated.bio,
         avatarUrl: _avatarUrlOverride ?? updated.avatarUrl,
         location: updated.location,
@@ -134,22 +145,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
     final user = ref.watch(authProvider).user!;
     final avatarUrl = _avatarUrlOverride ?? user.avatarUrl;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('تعديل الملف الشخصي'),
+        title: Text(l10n.editProfileTitle),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _save,
             child: _isSaving
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('حفظ'),
+                ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : Text(l10n.saveButton),
           ),
         ],
       ),
@@ -163,13 +173,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 52,
-                    backgroundColor: AppTheme.surface,
-                    backgroundImage: avatarUrl != null
-                        ? CachedNetworkImageProvider(avatarUrl)
-                        : null,
+                    backgroundColor: theme.colorScheme.surface,
+                    backgroundImage: avatarUrl != null ? CachedNetworkImageProvider(avatarUrl) : null,
                     child: avatarUrl == null
-                        ? const Icon(Icons.person,
-                            size: 52, color: AppTheme.textMuted)
+                        ? Icon(Icons.person, size: 52, color: theme.colorScheme.onSurfaceVariant)
                         : null,
                   ),
                   Positioned(
@@ -179,16 +186,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       onTap: _isUploadingAvatar ? null : _pickAndUploadAvatar,
                       child: CircleAvatar(
                         radius: 18,
-                        backgroundColor: AppTheme.primaryRed,
+                        backgroundColor: accent,
                         child: _isUploadingAvatar
                             ? const SizedBox(
                                 height: 14,
                                 width: 14,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                               )
-                            : const Icon(Icons.camera_alt,
-                                size: 16, color: Colors.white),
+                            : const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                       ),
                     ),
                   ),
@@ -198,63 +203,64 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             const SizedBox(height: 28),
             TextFormField(
               controller: _fullNameController,
-              decoration: const InputDecoration(labelText: 'الاسم الكامل'),
-              validator: (v) =>
-                  (v == null || v.trim().length < 2) ? 'الاسم قصير جدًا' : null,
+              decoration: InputDecoration(labelText: l10n.fullNameLabel),
+              validator: (v) => (v == null || v.trim().length < 2) ? l10n.fullNameLengthError : null,
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<SportType>(
               initialValue: _sportType,
-              decoration: const InputDecoration(labelText: 'الرياضة'),
+              decoration: InputDecoration(labelText: l10n.sportLabel),
               items: SportType.values
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s.value)))
+                  .map((s) => DropdownMenuItem(value: s, child: Text(sportTypeLabel(l10n, s))))
                   .toList(),
               onChanged: (v) => setState(() => _sportType = v),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<WeightClass>(
               initialValue: _weightClass,
-              decoration: const InputDecoration(labelText: 'فئة الوزن'),
+              decoration: InputDecoration(labelText: l10n.weightLabel),
               items: WeightClass.values
-                  .map((w) => DropdownMenuItem(value: w, child: Text(w.value)))
+                  .map((w) => DropdownMenuItem(value: w, child: Text(weightClassLabel(l10n, w))))
                   .toList(),
               onChanged: (v) => setState(() => _weightClass = v),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _beltRankController,
-              decoration: const InputDecoration(
-                labelText: 'الحزام / الرتبة',
-                hintText: 'مثال: Black Belt',
-              ),
+              decoration: InputDecoration(labelText: l10n.beltRankLabel, hintText: l10n.beltRankHint),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _gymController,
-              decoration: const InputDecoration(labelText: 'النادي / الصالة'),
+              decoration: InputDecoration(labelText: l10n.gymLabel),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _coachNameController,
+              decoration: InputDecoration(labelText: l10n.coachNameLabel, hintText: l10n.coachNameHint),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _locationController,
-              decoration: const InputDecoration(labelText: 'الموقع'),
+              decoration: InputDecoration(labelText: l10n.locationLabel),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _bioController,
               maxLines: 4,
               maxLength: 500,
-              decoration: const InputDecoration(labelText: 'نبذة عني'),
+              decoration: InputDecoration(labelText: l10n.bioLabel),
             ),
             SwitchListTile(
-              title: const Text('حساب مدرّب'),
+              title: Text(l10n.coachToggleLabel),
               value: _isCoach,
-              activeThumbColor: AppTheme.gold,
+              activeThumbColor: accent,
               onChanged: (v) => setState(() => _isCoach = v),
               contentPadding: EdgeInsets.zero,
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!, style: const TextStyle(color: AppTheme.primaryRed)),
+              Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
             ],
           ],
         ),
