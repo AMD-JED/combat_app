@@ -10,8 +10,8 @@ import 'screens/main_navigation_screen.dart';
 import 'screens/feed/create_post_screen.dart';
 import 'screens/profile/edit_profile_screen.dart';
 import 'screens/profile/public_profile_screen.dart';
-import 'screens/messages/chat_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'screens/messages/chat_screen.dart';
 import 'models/user_model.dart';
 
 class _AuthRouterRefresh extends ChangeNotifier {
