@@ -62,6 +62,7 @@ class UserPublicResponse(BaseModel):
     weight_class: Optional[WeightClass]
     belt_rank: Optional[str]
     gym_affiliation: Optional[str]
+    coach_name: Optional[str]
     bio: Optional[str]
     avatar_url: Optional[str]
     location: Optional[str]

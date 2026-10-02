@@ -120,3 +120,36 @@ async def test_logout_success(client: AsyncClient):
 async def test_logout_requires_auth(client: AsyncClient):
     response = await client.post("/api/v1/auth/logout")
     assert response.status_code == 401
+
+
+
+
+@pytest.mark.asyncio
+async def test_coach_name_round_trips_through_update_and_me(client: AsyncClient):
+    """Regression guard: `coach_name` was a real, writable column
+    (`UserUpdate.coach_name`) that the PATCH endpoint already applied, but
+    both response schemas omitted it, so it could never be read back."""
+    await client.post("/api/v1/auth/register", json={
+        "email": "coachname@test.com",
+        "username": "coachname_fighter",
+        "full_name": "Coach Name Fighter",
+        "password": "testpass123",
+        "password_confirm": "testpass123",
+    })
+    login = await client.post("/api/v1/auth/login", data={
+        "username": "coachname@test.com",
+        "password": "testpass123",
+    })
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    resp = await client.patch(
+        "/api/v1/users/me", json={"coach_name": "Coach Karim"}, headers=headers
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["coach_name"] == "Coach Karim"
+
+    me = await client.get("/api/v1/auth/me", headers=headers)
+    assert me.json()["coach_name"] == "Coach Karim"
+
+
+
