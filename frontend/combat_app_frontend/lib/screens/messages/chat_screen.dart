@@ -57,10 +57,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   ChatNotifier get _chat => ref.read(chatProvider(widget.conversationId).notifier);
 
+  /// The list is `reverse: true`, so the newest message sits at offset 0
+  /// and the history opens at the bottom with no scroll math (a normal list
+  /// can't know the height of off-screen images/videos, so scrolling to its
+  /// estimated `maxScrollExtent` stopped short).
   void _scrollToBottom() {
     if (!_scrollController.hasClients) return;
     _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent,
+      0,
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOut,
     );
@@ -100,6 +104,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
     if (!mounted) return;
     await _chat.sendMedia(file, isVideo: video);
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
   }
 
   @override
@@ -111,12 +117,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final isSocketUp = ref.watch(chatSocketProvider.select((s) => s.isConnected));
     final isOnline = ref.watch(conversationsProvider
         .select((s) => s.byId(widget.conversationId)?.otherUserOnline ?? false));
-
-    ref.listen(chatProvider(widget.conversationId), (previous, next) {
-      if ((previous?.messages.length ?? 0) != next.messages.length) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-      }
-    });
 
     final rank = widget.otherUser.beltRank;
     final String subtitle;
@@ -220,10 +220,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     controller: _scrollController,
+                    reverse: true,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     itemCount: chatState.messages.length,
                     itemBuilder: (context, index) {
-                      final message = chatState.messages[index];
+                      // reverse: index 0 is the newest message.
+                      final message =
+                          chatState.messages[chatState.messages.length - 1 - index];
                       final isMine = message.sender.id == myUserId;
                       return MessageBubble(
                         message: message,

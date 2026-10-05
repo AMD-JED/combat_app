@@ -58,8 +58,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = await _authService.getMe();
       state = state.copyWith(status: AuthStatus.authenticated, user: user);
     } catch (_) {
-      // Token invalid/expired and refresh failed inside the Dio interceptor.
-      await SecureStorage.instance.clear();
+      // The Dio interceptor already clears the stored tokens when a 401 could
+      // not be refreshed (the session is really over). Any other failure —
+      // backend down or restarting, timeout, 5xx — says nothing about the
+      // session, so the tokens are KEPT: once the backend is back, a reload
+      // signs the user in again by itself instead of forcing a new login.
       state = state.copyWith(status: AuthStatus.unauthenticated);
     }
   }
