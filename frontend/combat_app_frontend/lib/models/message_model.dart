@@ -30,7 +30,14 @@ class MessageModel {
   /// getter covers both cases defensively.
   bool get isDeleted => deletedAt != null;
 
-  String get displayContent => isDeleted ? '🚫 تم حذف هذه الرسالة' : (content ?? '');
+  /// Raw text only — the "message deleted" placeholder and the media
+  /// previews ("📷 Photo") are localized in the UI layer (see
+  /// `screens/messages/widgets/chat_helpers.dart`).
+  String get displayContent => isDeleted ? '' : (content ?? '');
+
+  bool get hasMedia => !isDeleted && mediaUrl != null && mediaUrl!.isNotEmpty;
+  bool get isImage => hasMedia && mediaType == 'image';
+  bool get isVideo => hasMedia && mediaType == 'video';
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     return MessageModel(
@@ -71,12 +78,17 @@ class ConversationModel {
   final int unreadCount;
   final DateTime lastMessageAt;
 
+  /// Whether the other participant has a live socket right now (server-side
+  /// snapshot at fetch time; kept fresh by `presence` WS events).
+  final bool otherUserOnline;
+
   const ConversationModel({
     required this.id,
     required this.otherUser,
     this.lastMessage,
     required this.unreadCount,
     required this.lastMessageAt,
+    this.otherUserOnline = false,
   });
 
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
@@ -88,6 +100,7 @@ class ConversationModel {
           : null,
       unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
       lastMessageAt: DateTime.parse(json['last_message_at'] as String),
+      otherUserOnline: json['other_user_online'] as bool? ?? false,
     );
   }
 
@@ -95,6 +108,7 @@ class ConversationModel {
     MessageModel? lastMessage,
     int? unreadCount,
     DateTime? lastMessageAt,
+    bool? otherUserOnline,
   }) {
     return ConversationModel(
       id: id,
@@ -102,6 +116,7 @@ class ConversationModel {
       lastMessage: lastMessage ?? this.lastMessage,
       unreadCount: unreadCount ?? this.unreadCount,
       lastMessageAt: lastMessageAt ?? this.lastMessageAt,
+      otherUserOnline: otherUserOnline ?? this.otherUserOnline,
     );
   }
 }

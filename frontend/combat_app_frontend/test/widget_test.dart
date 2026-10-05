@@ -8,6 +8,8 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(child: CombatSportsApp()),
     );
-    expect(find.byType(MaterialApp), findsNothing); // uses MaterialApp.router
+    // `MaterialApp.router` is a named constructor of MaterialApp, so the
+    // widget tree contains exactly one MaterialApp.
+    expect(find.byType(MaterialApp), findsOneWidget);
   });
 }

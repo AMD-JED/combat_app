@@ -21,10 +21,12 @@ WebSocket (for real-time):
     { "event": "new_message",  "data": { ...MessageResponse } }
     { "event": "message_read", "data": { "conversation_id": 5 } }
     { "event": "user_typing",  "data": { "user_id": 3, "conversation_id": 5 } }
+    { "event": "presence",     "data": { "user_id": 3, "is_online": true } }
     { "event": "error",        "data": { "detail": "..." } }
 """
 
 import json
+import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query, status
@@ -37,12 +39,14 @@ from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.repositories.message_repository import ConversationRepository, MessageRepository
 from app.schemas.message import (
-    MessageCreate, MessageResponse, ConversationResponse, WSIncomingMessage
+    MessageCreate, MessageResponse, ConversationResponse, WSIncomingMessage,
+    validate_message_payload,
 )
 from app.services.connection_manager import manager
 from app.services import notification_service
 
 router = APIRouter(prefix="/messages", tags=["Direct Messages"])
+logger = logging.getLogger(__name__)
 
 
 # ──────────────────────────────────────────────
@@ -66,6 +70,20 @@ def _msg_to_dict(msg, sender) -> dict:
         "deleted_at": msg.deleted_at.isoformat() if msg.deleted_at else None,
         "created_at": msg.created_at.isoformat(),
     }
+
+
+async def _broadcast_presence(user_id: int, is_online: bool, conv_repo) -> None:
+    """Tell everyone who shares a conversation with `user_id` that they came
+    online / went offline. Best-effort: a failure here must never break the
+    socket itself."""
+    try:
+        conversations = await conv_repo.get_user_conversations(user_id)
+        payload = {"event": "presence", "data": {"user_id": user_id, "is_online": is_online}}
+        for conv in conversations:
+            other = conv.other_user(user_id)
+            await manager.send_to_user(other.id, payload)
+    except Exception:  # pragma: no cover - defensive
+        logger.exception("presence broadcast failed for user %s", user_id)
 
 
 # ──────────────────────────────────────────────
@@ -94,6 +112,7 @@ async def list_conversations(
                 last_message=MessageResponse.model_validate(msgs[0]) if msgs else None,
                 unread_count=unread,
                 last_message_at=conv.last_message_at,
+                other_user_online=manager.is_online(other.id),
             )
         )
     return result
@@ -251,6 +270,7 @@ async def websocket_endpoint(
         return
 
     # ── Connect ──
+    was_online = manager.is_online(current_user.id)
     await manager.connect(current_user.id, websocket)
 
     # Send presence confirmation
@@ -261,6 +281,9 @@ async def websocket_endpoint(
 
     conv_repo = ConversationRepository(db)
     msg_repo = MessageRepository(db)
+
+    if not was_online:
+        await _broadcast_presence(current_user.id, True, conv_repo)
 
     try:
         while True:
@@ -280,6 +303,14 @@ async def websocket_endpoint(
 
                 if not await conv_repo.user_belongs_to(current_user.id, incoming.conversation_id):
                     await websocket.send_json({"event": "error", "data": {"detail": "Not a participant"}})
+                    continue
+
+                try:
+                    validate_message_payload(incoming.content, incoming.media_url, incoming.media_type)
+                    if incoming.content and len(incoming.content) > 2000:
+                        raise ValueError("content too long (max 2000)")
+                except ValueError as exc:
+                    await websocket.send_json({"event": "error", "data": {"detail": str(exc)}})
                     continue
 
                 msg = await msg_repo.send(
@@ -351,4 +382,8 @@ async def websocket_endpoint(
                 await websocket.send_json({"event": "error", "data": {"detail": f"Unknown type: {incoming.type}"}})
 
     except WebSocketDisconnect:
+        pass
+    finally:
         manager.disconnect(current_user.id, websocket)
+        if not manager.is_online(current_user.id):
+            await _broadcast_presence(current_user.id, False, conv_repo)

@@ -12,6 +12,8 @@ Endpoints:
   POST /uploads/post/image      ← Upload image for a post
   POST /uploads/post/video      ← Upload video for a post
   POST /uploads/exercise/video  ← Upload exercise tutorial (coaches only)
+  POST /uploads/message/image   ← Upload image for a direct message
+  POST /uploads/message/video   ← Upload video for a direct message
   DELETE /uploads/{public_id}   ← Delete a media file
 """
 
@@ -29,6 +31,8 @@ from app.services.cloudinary_service import (
     upload_story_image,
     upload_story_video,
     upload_reel_video,
+    upload_message_image,
+    upload_message_video,
     delete_media,
 )
 from app.utils.file_validation import (
@@ -192,6 +196,30 @@ async def upload_video_for_reel(
 # ──────────────────────────────────────────────
 #  Delete
 # ──────────────────────────────────────────────
+
+@router.post("/message/image")
+async def upload_image_for_message(
+    file: UploadFile = File(..., description="JPEG, PNG, WEBP, or GIF. Max 10MB."),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Upload an image to attach to a direct message. Use the returned `url`
+    as `media_url` (with `media_type: "image"`) when sending the message."""
+    await validate_file(file, ALLOWED_IMAGE_TYPES, max_size_mb=10)
+    result = await upload_message_image(file, user_id=current_user.id)
+    return {"message": "Image uploaded successfully", **result}
+
+
+@router.post("/message/video")
+async def upload_video_for_message(
+    file: UploadFile = File(..., description="MP4, MOV, AVI, or WEBM. Max 200MB."),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Upload a video to attach to a direct message. Use the returned `url`
+    as `media_url` (with `media_type: "video"`) when sending the message."""
+    await validate_file(file, ALLOWED_VIDEO_TYPES, max_size_mb=200)
+    result = await upload_message_video(file, user_id=current_user.id)
+    return {"message": "Video uploaded successfully", **result}
+
 
 @router.delete("/{public_id:path}")
 async def remove_media(

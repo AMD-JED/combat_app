@@ -21,7 +21,7 @@ class ChatAuthException implements Exception {
 /// final socket = ChatSocketService();
 /// await socket.connect();
 /// socket.events.listen((event) {
-///   // event['event'] is one of: connected | new_message | message_read | user_typing | error
+///   // event['event'] is one of: connected | new_message | message_read | user_typing | presence | error
 /// });
 /// socket.sendMessage(conversationId: 5, content: "yo!");
 /// socket.dispose();
@@ -37,7 +37,9 @@ class ChatSocketService {
 
   bool _disposed = false;
 
-  Future<void> connect() async {
+  /// [onClosed] fires once when the socket closes for ANY reason (server
+  /// restart, network drop, bad token) so the owner can reconnect.
+  Future<void> connect({void Function(int? closeCode)? onClosed}) async {
     final token = await SecureStorage.instance.getAccessToken();
     if (token == null) {
       throw ChatAuthException('لا يوجد رمز دخول محفوظ');
@@ -53,9 +55,10 @@ class ChatSocketService {
       queryParameters: {'token': token},
     );
 
-    _channel = WebSocketChannel.connect(uri);
+    final channel = WebSocketChannel.connect(uri);
+    _channel = channel;
 
-    _subscription = _channel!.stream.listen(
+    _subscription = channel.stream.listen(
       (raw) {
         try {
           final decoded = jsonDecode(raw as String) as Map<String, dynamic>;
@@ -66,17 +69,22 @@ class ChatSocketService {
       },
       onDone: () {
         // Backend closes with 4001 for an invalid/expired token.
-        final closeCode = _channel?.closeCode;
-        if (closeCode == 4001 && !_disposed) {
+        final closeCode = channel.closeCode;
+        if (_disposed) return;
+        if (closeCode == 4001) {
           _eventController.addError(
               ChatAuthException('انتهت صلاحية الجلسة، الرجاء إعادة الاتصال'));
         }
+        onClosed?.call(closeCode);
       },
       onError: (error) {
         if (!_disposed) _eventController.addError(error);
       },
       cancelOnError: false,
     );
+
+    // Completes once the handshake succeeds, throws if it fails.
+    await channel.ready;
   }
 
   void _send(Map<String, dynamic> payload) {

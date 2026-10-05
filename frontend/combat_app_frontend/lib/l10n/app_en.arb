@@ -185,5 +185,42 @@
         "type": "int"
       }
     }
+  },
+  "chatEmptyTitle": "No conversations yet",
+  "chatStartConversation": "Start the conversation",
+  "chatMediaImagePreview": "📷 Photo",
+  "chatMediaVideoPreview": "🎥 Video",
+  "chatMessageDeleted": "🚫 This message was deleted",
+  "chatTyping": "typing…",
+  "chatOnline": "Online",
+  "chatOffline": "Offline",
+  "chatReconnecting": "Reconnecting…",
+  "chatInputHint": "Write a message…",
+  "chatChallengeButton": "Challenge",
+  "chatChallengeTooltip": "Send a sparring invitation",
+  "chatChallengeMessage": "🥋 Sparring invitation: I'm proposing a 5-round session tonight at 6:30 PM. You in?",
+  "chatQuickAvailableTonight": "Free to train tonight?",
+  "chatQuickThanksSession": "Great session yesterday, thanks! 🔥",
+  "chatQuickWhichClub": "Which gym / what time for the open mat?",
+  "chatAttachTooltip": "Attach",
+  "chatAttachPhoto": "Photo from gallery",
+  "chatAttachVideo": "Video from gallery",
+  "chatUploading": "Sending media…",
+  "chatUploadFailed": "Couldn't send the media. Please try again.",
+  "chatUnreadCount": "{count} unread",
+  "@chatUnreadCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatMediaTooLarge": "File too large (max {mb} MB)",
+  "@chatMediaTooLarge": {
+    "placeholders": {
+      "mb": {
+        "type": "int"
+      }
+    }
   }
 }

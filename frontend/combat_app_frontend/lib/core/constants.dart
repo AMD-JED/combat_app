@@ -40,6 +40,8 @@ class ApiConfig {
   static const String uploadAvatar = '/uploads/avatar';
   static const String uploadPostImage = '/uploads/post/image';
   static const String uploadPostVideo = '/uploads/post/video';
+  static const String uploadMessageImage = '/uploads/message/image';
+  static const String uploadMessageVideo = '/uploads/message/video';
 
   // Posts
   static const String postsFeed = '/posts/feed';

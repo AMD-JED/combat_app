@@ -25,4 +25,22 @@ class UploadService {
       throw ApiException.fromDioError(e);
     }
   }
+
+  /// POST /uploads/message/image|video (multipart) → { url, ... }
+  /// Uploads a chat attachment and returns the Cloudinary `url` to send as
+  /// `media_url` (the backend only accepts https Cloudinary URLs there).
+  Future<String> uploadMessageMedia(XFile file, {required bool isVideo}) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await multipartFromXFile(file),
+      });
+      final response = await _dio.post(
+        isVideo ? ApiConfig.uploadMessageVideo : ApiConfig.uploadMessageImage,
+        data: formData,
+      );
+      return response.data['url'] as String;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }

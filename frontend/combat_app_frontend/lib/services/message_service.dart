@@ -54,6 +54,31 @@ class MessageService {
     }
   }
 
+  /// POST /messages/conversations/{id}/messages — REST fallback used when the
+  /// WebSocket is down. NOTE: unlike the socket path, the backend does not
+  /// push this one to the recipient live (they get the push notification and
+  /// see it on their next fetch).
+  Future<MessageModel> sendMessageRest(
+    int conversationId, {
+    String? content,
+    String? mediaUrl,
+    String? mediaType,
+  }) async {
+    try {
+      final response = await _dio.post(
+        ApiConfig.conversationMessages(conversationId),
+        data: {
+          'content': content,
+          'media_url': mediaUrl,
+          'media_type': mediaType,
+        },
+      );
+      return MessageModel.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
   /// POST /messages/conversations/{id}/read → { marked_read }
   Future<int> markRead(int conversationId) async {
     try {

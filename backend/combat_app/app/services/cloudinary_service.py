@@ -59,6 +59,8 @@ class UploadFolder(str, Enum):
     STORY_IMAGE     = "combat/stories/images"
     STORY_VIDEO     = "combat/stories/videos"
     REEL_VIDEO      = "combat/reels/videos"
+    MESSAGE_IMAGE   = "combat/messages/images"
+    MESSAGE_VIDEO   = "combat/messages/videos"
 
     def __str__(self):
         return self.value
@@ -384,6 +386,77 @@ async def upload_reel_video(file: UploadFile, user_id: int) -> dict:
 # ──────────────────────────────────────────────
 #  Delete
 # ──────────────────────────────────────────────
+
+def video_poster_url(video_url: str) -> str:
+    """Derive a JPG poster frame (at 1s) from a Cloudinary video URL."""
+    head, _, last = video_url.rpartition("/")
+    stem = last.rsplit(".", 1)[0] if "." in last else last
+    head = head.replace("/video/upload/", "/video/upload/so_1/", 1)
+    return f"{head}/{stem}.jpg"
+
+
+async def upload_message_image(file: UploadFile, user_id: int) -> dict:
+    """
+    Upload an image attached to a direct message (downscale only, never upscale).
+    Returns: {"url": str, "public_id": str, "width": int, "height": int}
+    """
+    _validate_image(file)
+    contents = await _read_file(file, max_size=MAX_IMAGE_SIZE)
+
+    unique_id = uuid.uuid4().hex[:12]
+    public_id = f"{UploadFolder.MESSAGE_IMAGE.value}/msg_{unique_id}_user_{user_id}"
+
+    try:
+        result = cloudinary.uploader.upload(
+            contents,
+            public_id=public_id,
+            resource_type="image",
+            transformation=[
+                {"width": 1280, "height": 1280, "crop": "limit", "quality": "auto:good", "fetch_format": "auto"}
+            ],
+        )
+        return {
+            "url": result["secure_url"],
+            "public_id": result["public_id"],
+            "width": result.get("width"),
+            "height": result.get("height"),
+        }
+
+    except cloudinary.exceptions.Error as e:
+        raise HTTPException(status_code=500, detail=f"Message image upload failed: {str(e)}")
+
+
+async def upload_message_video(file: UploadFile, user_id: int) -> dict:
+    """
+    Upload a video attached to a direct message. Transcodes to H.264 MP4 and
+    derives a JPG poster frame.
+    Returns: {"url": str, "public_id": str, "duration": float, "thumbnail_url": str}
+    """
+    _validate_video(file)
+    contents = await _read_file(file, max_size=MAX_VIDEO_SIZE)
+
+    unique_id = uuid.uuid4().hex[:12]
+    public_id = f"{UploadFolder.MESSAGE_VIDEO.value}/msg_{unique_id}_user_{user_id}"
+
+    try:
+        result = cloudinary.uploader.upload(
+            contents,
+            public_id=public_id,
+            resource_type="video",
+            chunk_size=6_000_000,
+            eager=[{"format": "mp4", "transformation": [{"quality": "auto:good", "video_codec": "h264"}]}],
+            eager_async=True,
+        )
+        return {
+            "url": result["secure_url"],
+            "public_id": result["public_id"],
+            "duration": result.get("duration"),
+            "thumbnail_url": video_poster_url(result["secure_url"]),
+        }
+
+    except cloudinary.exceptions.Error as e:
+        raise HTTPException(status_code=500, detail=f"Message video upload failed: {str(e)}")
+
 
 def delete_media(public_id: str, resource_type: str = "image") -> bool:
     """
