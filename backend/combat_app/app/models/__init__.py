@@ -8,7 +8,7 @@ from app.models.gym import Gym, GymMembership
 from app.models.open_mat import OpenMat, OpenMatRSVP
 from app.models.training import TrainingSession, TrainingExerciseLog
 from app.models.ai_coach import AICoachConversation, AICoachMessage
-from app.models.story import Story, StoryView, Highlight, HighlightStory
+from app.models.story import Story, StoryView, StoryLike, Highlight, HighlightStory
 from app.models.reel import Reel, ReelLike
 from app.models.notification import Notification, DeviceToken, SessionReminder
 
@@ -23,7 +23,7 @@ __all__ = [
     "OpenMat", "OpenMatRSVP",
     "TrainingSession", "TrainingExerciseLog",
     "AICoachConversation", "AICoachMessage",
-    "Story", "StoryView", "Highlight", "HighlightStory",
+    "Story", "StoryView", "StoryLike", "Highlight", "HighlightStory",
     "Reel", "ReelLike",
     "Notification", "DeviceToken", "SessionReminder",
 ]

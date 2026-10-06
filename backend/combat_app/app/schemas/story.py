@@ -46,10 +46,17 @@ class StoryResponse(BaseModel):
     visibility: StoryVisibility
     views_count: int = 0
     viewed_by_me: bool = False
+    likes_count: int = 0
+    liked_by_me: bool = False
     created_at: datetime
     expires_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class StoryLikeResponse(BaseModel):
+    liked: bool
+    likes_count: int
 
 
 class StoryViewerResponse(BaseModel):

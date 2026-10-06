@@ -71,6 +71,7 @@ class Story(Base):
     author = relationship("User", foreign_keys=[author_id])
     views = relationship("StoryView", back_populates="story", cascade="all, delete-orphan")
     highlight_entries = relationship("HighlightStory", back_populates="story", cascade="all, delete-orphan")
+    likes = relationship("StoryLike", back_populates="story", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Story author={self.author_id} type={self.content_type}>"
@@ -95,6 +96,27 @@ class StoryView(Base):
 
     def __repr__(self) -> str:
         return f"<StoryView story={self.story_id} viewer={self.viewer_id}>"
+
+
+class StoryLike(Base):
+    """One row per (story, user) — a heart on a story (v11). Unique
+    constraint makes the like endpoint a clean toggle: the same user can
+    never hold two likes on the same story."""
+    __tablename__ = "story_likes"
+    __table_args__ = (
+        UniqueConstraint("story_id", "user_id", name="uq_story_likes_story_user"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    story_id = Column(Integer, ForeignKey("stories.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    story = relationship("Story", back_populates="likes")
+    user = relationship("User", foreign_keys=[user_id])
+
+    def __repr__(self) -> str:
+        return f"<StoryLike story={self.story_id} user={self.user_id}>"
 
 
 class Highlight(Base):

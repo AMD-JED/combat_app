@@ -1,9 +1,11 @@
 """
 Stories Endpoints (v9)
 =======================
-POST   /stories/                     ← create (image/video/text, expires in 24h)
+POST   /stories/                     ← create (image/video/text, expires in 24h; for image/video
+                                         `text_content` is the optional caption)
 GET    /stories/feed                 ← active stories from me + people I follow
 GET    /stories/{id}                 ← get one active story (records a view)
+POST   /stories/{id}/like            ← heart / un-heart (toggle, v11)
 GET    /stories/{id}/views           ← "seen by" list (author only)
 DELETE /stories/{id}                 ← delete (also removes it from any Highlights)
 POST   /stories/{id}/reply           ← reply via DM to the story's author
@@ -26,14 +28,26 @@ from app.schemas.story import (
     StoryResponse,
     StoryViewerResponse,
     StoryReplyCreate,
+    StoryLikeResponse,
 )
 
 router = APIRouter(prefix="/stories", tags=["Stories"])
 
 
-async def _serialize_story(story: Story, repo: StoryRepository, current_user_id: int) -> StoryResponse:
+async def _serialize_story(
+    story: Story,
+    repo: StoryRepository,
+    current_user_id: int,
+    likes_info=None,
+) -> StoryResponse:
+    """`likes_info` is the ({id: count}, {liked ids}) pair from
+    StoryRepository.likes_summary — pass it when serializing a page of
+    stories so likes cost two queries in total, not two per story."""
     views_count = await repo.get_views_count(story.id)
     viewed_by_me = await repo.viewed_by(story.id, current_user_id)
+    if likes_info is None:
+        likes_info = await repo.likes_summary([story.id], current_user_id)
+    like_counts, liked_ids = likes_info
     return StoryResponse(
         id=story.id,
         author=story.author,
@@ -44,6 +58,8 @@ async def _serialize_story(story: Story, repo: StoryRepository, current_user_id:
         visibility=story.visibility,
         views_count=views_count,
         viewed_by_me=viewed_by_me,
+        likes_count=like_counts.get(story.id, 0),
+        liked_by_me=story.id in liked_ids,
         created_at=story.created_at,
         expires_at=story.expires_at,
     )
@@ -84,7 +100,8 @@ async def get_stories_feed(
 
     repo = StoryRepository(db)
     stories = await repo.get_active_feed(current_user.id, following_ids, skip=skip, limit=limit)
-    return [await _serialize_story(s, repo, current_user.id) for s in stories]
+    likes_info = await repo.likes_summary([s.id for s in stories], current_user.id)
+    return [await _serialize_story(s, repo, current_user.id, likes_info) for s in stories]
 
 
 @router.get("/{story_id}", response_model=StoryResponse)
@@ -110,6 +127,33 @@ async def get_story(
         await db.commit()
 
     return await _serialize_story(story, repo, current_user.id)
+
+
+@router.post("/{story_id}/like", response_model=StoryLikeResponse)
+async def toggle_story_like(
+    story_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Heart / un-heart a story (toggle). Same visibility rules as viewing
+    it: the story must be active, and a followers-only story can only be
+    liked by the author or someone who follows the author."""
+    repo = StoryRepository(db)
+    story = await repo.get_active_by_id(story_id)
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found or has expired")
+
+    if story.visibility == "followers" and story.author_id != current_user.id:
+        user_repo = UserRepository(db)
+        user = await user_repo.get_with_relations(current_user.id)
+        following_ids = {u.id for u in user.following}
+        if story.author_id not in following_ids:
+            raise HTTPException(status_code=403, detail="This story is only visible to the author's followers")
+
+    liked = await repo.toggle_like(story_id, current_user.id)
+    await db.commit()
+    counts, _ = await repo.likes_summary([story_id], current_user.id)
+    return StoryLikeResponse(liked=liked, likes_count=counts.get(story_id, 0))
 
 
 @router.get("/{story_id}/views", response_model=List[StoryViewerResponse])

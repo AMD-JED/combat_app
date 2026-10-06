@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 
 from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.story import Story, StoryView, Highlight, HighlightStory
+from app.models.story import Story, StoryView, StoryLike, Highlight, HighlightStory
 from app.repositories.base_repository import BaseRepository
 
 
@@ -116,6 +116,43 @@ class StoryRepository(BaseRepository[Story]):
         )
         return list(result.scalars().all())
 
+    async def toggle_like(self, story_id: int, user_id: int) -> bool:
+        """Like the story if the user hasn't, unlike it if they have.
+        Returns True when the story is liked AFTER the call."""
+        existing = await self.db.execute(
+            select(StoryLike).where(
+                and_(StoryLike.story_id == story_id, StoryLike.user_id == user_id)
+            )
+        )
+        like = existing.scalar_one_or_none()
+        if like:
+            await self.db.delete(like)
+            await self.db.flush()
+            return False
+        self.db.add(StoryLike(story_id=story_id, user_id=user_id))
+        await self.db.flush()
+        return True
+
+    async def likes_summary(
+        self, story_ids: List[int], viewer_id: int
+    ) -> Tuple[Dict[int, int], Set[int]]:
+        """Two grouped queries for a whole page of stories (instead of two
+        per story): ({story_id: likes_count}, {story_ids liked by viewer})."""
+        if not story_ids:
+            return {}, set()
+        counts_result = await self.db.execute(
+            select(StoryLike.story_id, func.count())
+            .where(StoryLike.story_id.in_(story_ids))
+            .group_by(StoryLike.story_id)
+        )
+        counts = {sid: n for sid, n in counts_result.all()}
+        mine_result = await self.db.execute(
+            select(StoryLike.story_id).where(
+                StoryLike.story_id.in_(story_ids), StoryLike.user_id == viewer_id
+            )
+        )
+        return counts, {row[0] for row in mine_result.all()}
+
     async def delete_story(self, story_id: int) -> bool:
         """
         Deliberately does NOT use BaseRepository.delete() (a bulk core
@@ -131,7 +168,11 @@ class StoryRepository(BaseRepository[Story]):
         """
         result = await self.db.execute(
             select(Story)
-            .options(selectinload(Story.highlight_entries), selectinload(Story.views))
+            .options(
+                selectinload(Story.highlight_entries),
+                selectinload(Story.views),
+                selectinload(Story.likes),
+            )
             .where(Story.id == story_id)
         )
         story = result.scalar_one_or_none()
