@@ -368,7 +368,7 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundImage:
-                              hasUrl ? CachedNetworkImageProvider(url!) : null,
+                              hasUrl ? CachedNetworkImageProvider(url) : null,
                           child: hasUrl ? null : const Icon(Icons.person),
                         ),
                         title: Text(v.viewer.fullName),
@@ -637,7 +637,7 @@ class _Header extends StatelessWidget {
         CircleAvatar(
           radius: 18,
           backgroundColor: Colors.white24,
-          backgroundImage: hasUrl ? CachedNetworkImageProvider(url!) : null,
+          backgroundImage: hasUrl ? CachedNetworkImageProvider(url) : null,
           child: hasUrl ? null : const Icon(Icons.person, color: Colors.white, size: 18),
         ),
         const SizedBox(width: 10),

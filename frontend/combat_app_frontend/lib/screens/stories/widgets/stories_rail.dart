@@ -222,7 +222,7 @@ class _StoryCard extends StatelessWidget {
                 child: CircleAvatar(
                   backgroundColor: Colors.black,
                   backgroundImage:
-                      hasAvatar ? CachedNetworkImageProvider(avatarUrl!) : null,
+                      hasAvatar ? CachedNetworkImageProvider(avatarUrl) : null,
                   child: hasAvatar
                       ? null
                       : Icon(Icons.person, size: 16, color: scheme.primary),
