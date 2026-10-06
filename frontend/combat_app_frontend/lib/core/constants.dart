@@ -42,6 +42,16 @@ class ApiConfig {
   static const String uploadPostVideo = '/uploads/post/video';
   static const String uploadMessageImage = '/uploads/message/image';
   static const String uploadMessageVideo = '/uploads/message/video';
+  static const String uploadStoryImage = '/uploads/story/image';
+  static const String uploadStoryVideo = '/uploads/story/video';
+
+  // Stories
+  static const String stories = '/stories/';
+  static const String storiesFeed = '/stories/feed';
+  static String storyById(int id) => '/stories/$id';
+  static String storyLike(int id) => '/stories/$id/like';
+  static String storyReply(int id) => '/stories/$id/reply';
+  static String storyViews(int id) => '/stories/$id/views';
 
   // Posts
   static const String postsFeed = '/posts/feed';

@@ -43,4 +43,20 @@ class UploadService {
       throw ApiException.fromDioError(e);
     }
   }
+
+  /// POST /uploads/story/image|video (multipart) → { url, ... }
+  Future<String> uploadStoryMedia(XFile file, {required bool isVideo}) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await multipartFromXFile(file),
+      });
+      final response = await _dio.post(
+        isVideo ? ApiConfig.uploadStoryVideo : ApiConfig.uploadStoryImage,
+        data: formData,
+      );
+      return response.data['url'] as String;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }

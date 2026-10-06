@@ -12,6 +12,8 @@ import 'screens/profile/edit_profile_screen.dart';
 import 'screens/profile/public_profile_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/messages/chat_screen.dart';
+import 'screens/stories/create_story_screen.dart';
+import 'screens/stories/story_viewer_screen.dart';
 import 'models/user_model.dart';
 
 class _AuthRouterRefresh extends ChangeNotifier {
@@ -73,6 +75,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           final conversationId = int.parse(state.pathParameters['conversationId']!);
           final otherUser = state.extra as UserModel;
           return ChatScreen(conversationId: conversationId, otherUser: otherUser);
+        },
+      ),
+      GoRoute(
+        path: '/stories/create',
+        builder: (context, state) => const CreateStoryScreen(),
+      ),
+      GoRoute(
+        path: '/stories/view',
+        builder: (context, state) {
+          // `extra` is lost on a web reload; the viewer then closes itself.
+          final extra = state.extra;
+          final groupIndex = extra is StoryViewerArgs ? extra.groupIndex : -1;
+          return StoryViewerScreen(initialGroupIndex: groupIndex);
         },
       ),
     ],

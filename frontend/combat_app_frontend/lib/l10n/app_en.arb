@@ -222,5 +222,43 @@
         "type": "int"
       }
     }
+  },
+  "storiesCreate": "Create story",
+  "storiesYourStory": "Your story",
+  "storyCreateTitle": "New story",
+  "storyTypePhoto": "Photo",
+  "storyTypeVideo": "Video",
+  "storyTypeText": "Text",
+  "storyPickPhoto": "Tap to choose a photo",
+  "storyPickVideo": "Tap to choose a video",
+  "storyCaptionHint": "Add a caption…",
+  "storyTextHint": "Write something…",
+  "storyVisibilityPublic": "Everyone",
+  "storyVisibilityFollowers": "Followers",
+  "storyPublish": "Publish",
+  "storyPublishing": "Publishing…",
+  "storyPublishFailed": "Couldn't publish your story. Please try again.",
+  "storyReplySent": "Reply sent",
+  "storyReplyFailed": "Couldn't send your reply",
+  "storyViewersTitle": "Viewers",
+  "storyNoViewers": "No views yet",
+  "storyDeleteTitle": "Delete this story?",
+  "storyDeleteFailed": "Couldn't delete the story",
+  "storyUnavailable": "This story is no longer available",
+  "storyReplyHint": "Reply to {name}…",
+  "@storyReplyHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "storyViewsCount": "{count} views",
+  "@storyViewsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }
