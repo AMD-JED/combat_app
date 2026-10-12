@@ -23,6 +23,7 @@ from app.repositories.story_repository import StoryRepository
 from app.repositories.user_repository import UserRepository
 from app.repositories.message_repository import ConversationRepository, MessageRepository
 from app.services import notification_service
+from app.api.v1.endpoints.messages import push_new_message
 from app.schemas.story import (
     StoryCreate,
     StoryResponse,
@@ -227,6 +228,9 @@ async def reply_to_story(
         data={"conversation_id": conv.id, "message_id": msg.id, "reply_to_story_id": story_id},
     )
     await db.commit()
+
+    # Show the reply live in both conversation lists (author + replier).
+    await push_new_message(msg, current_user, story.author_id)
 
     return {
         "conversation_id": conv.id,

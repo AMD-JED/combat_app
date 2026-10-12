@@ -69,7 +69,22 @@ def _msg_to_dict(msg, sender) -> dict:
         "is_read": msg.is_read,
         "deleted_at": msg.deleted_at.isoformat() if msg.deleted_at else None,
         "created_at": msg.created_at.isoformat(),
+        "reply_to_story_id": msg.reply_to_story_id,
     }
+
+
+async def push_new_message(msg, sender, recipient_id: int) -> None:
+    """Live-deliver a message that was saved over REST (the WebSocket path
+    already does this itself): to the recipient AND to the sender's other
+    open sessions, so both conversation lists update without a refresh.
+    Best-effort — the message is already saved, a push failure must never
+    fail the request."""
+    payload = {"event": "new_message", "data": _msg_to_dict(msg, sender)}
+    try:
+        await manager.send_to_user(recipient_id, payload)
+        await manager.send_to_user(sender.id, payload)
+    except Exception:  # pragma: no cover - defensive
+        logger.exception("live push failed for message %s", msg.id)
 
 
 async def _broadcast_presence(user_id: int, is_online: bool, conv_repo) -> None:
@@ -199,6 +214,8 @@ async def send_message_rest(
         data={"conversation_id": conversation_id, "message_id": msg.id},
     )
     await db.commit()
+
+    await push_new_message(msg, current_user, recipient_id)
 
     # Reload with sender relationship for response_model serialization
     await db.refresh(msg, attribute_names=["sender"])

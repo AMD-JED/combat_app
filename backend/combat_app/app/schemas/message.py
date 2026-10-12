@@ -56,6 +56,8 @@ class MessageResponse(BaseModel):
     is_read: bool
     deleted_at: Optional[datetime]
     created_at: datetime
+    # Set when this message is a reply to someone's story (POST /stories/{id}/reply)
+    reply_to_story_id: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
