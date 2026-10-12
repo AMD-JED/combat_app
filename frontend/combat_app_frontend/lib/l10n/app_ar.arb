@@ -185,5 +185,8 @@
   "storyDeleteFailed": "تعذّر حذف القصة",
   "storyUnavailable": "هذه القصة لم تعد متاحة",
   "storyReplyHint": "الرد على {name}...",
-  "storyViewsCount": "{count} مشاهدة"
+  "storyViewsCount": "{count} مشاهدة",
+  "chatStoryReplyMine": "ردّ منك على قصته",
+  "chatStoryReplyTheirs": "ردّ على قصتك",
+  "storyReplyOpenChat": "فتح المحادثة"
 }

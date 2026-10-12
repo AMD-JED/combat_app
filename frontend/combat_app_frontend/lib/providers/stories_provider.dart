@@ -128,15 +128,15 @@ class StoriesNotifier extends StateNotifier<StoriesState> {
     }
   }
 
-  /// Returns true when the DM reached the author.
-  Future<bool> reply(int storyId, String text) async {
+  /// Returns the id of the conversation the reply landed in, or null when it
+  /// could not be sent.
+  Future<int?> reply(int storyId, String text) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty) return false;
+    if (trimmed.isEmpty) return null;
     try {
-      await _service.reply(storyId, trimmed);
-      return true;
+      return await _service.reply(storyId, trimmed);
     } catch (_) {
-      return false;
+      return null;
     }
   }
 

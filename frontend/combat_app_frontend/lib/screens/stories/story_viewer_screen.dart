@@ -8,6 +8,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/story_model.dart';
+import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/stories_provider.dart';
 import '../feed/widgets/feed_helpers.dart';
@@ -278,10 +279,36 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
     final messenger = ScaffoldMessenger.of(context);
     _replyController.clear();
     _replyFocus.unfocus();
-    final ok = await ref.read(storiesProvider.notifier).reply(story.id, text);
+    final conversationId =
+        await ref.read(storiesProvider.notifier).reply(story.id, text);
+    if (conversationId == null) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.storyReplyFailed)));
+      return;
+    }
     messenger.showSnackBar(
-      SnackBar(content: Text(ok ? l10n.storyReplySent : l10n.storyReplyFailed)),
+      SnackBar(
+        content: Text(l10n.storyReplySent),
+        // The reply is a private message: tell the user where it went.
+        action: mounted
+            ? SnackBarAction(
+                label: l10n.storyReplyOpenChat,
+                onPressed: () => _openChat(conversationId, story.author),
+              )
+            : null,
+      ),
     );
+  }
+
+  /// Opens the conversation with the story's author on top of the viewer,
+  /// pausing the story meanwhile.
+  Future<void> _openChat(int conversationId, UserModel author) async {
+    if (!mounted) return;
+    setState(() => _sheetOpen = true);
+    _updatePlayback();
+    await context.push('/messages/$conversationId', extra: author);
+    if (!mounted) return;
+    setState(() => _sheetOpen = false);
+    _updatePlayback();
   }
 
   Future<void> _confirmDelete(StoryModel story) async {

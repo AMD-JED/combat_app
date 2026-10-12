@@ -78,6 +78,39 @@ class MessageBubble extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (message.isStoryReply)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Container(
+                            padding: const EdgeInsetsDirectional.only(start: 8),
+                            decoration: BoxDecoration(
+                              border: BorderDirectional(
+                                start: BorderSide(color: metaColor, width: 2),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.reply, size: 13, color: metaColor),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    isMine
+                                        ? l10n.chatStoryReplyMine
+                                        : l10n.chatStoryReplyTheirs,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: metaColor,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       if (message.isDeleted)
                         Text(
                           l10n.chatMessageDeleted,

@@ -185,5 +185,8 @@
   "storyDeleteFailed": "Impossible de supprimer la story",
   "storyUnavailable": "Cette story n'est plus disponible",
   "storyReplyHint": "Répondre à {name}…",
-  "storyViewsCount": "{count} vues"
+  "storyViewsCount": "{count} vues",
+  "chatStoryReplyMine": "Vous avez répondu à sa story",
+  "chatStoryReplyTheirs": "A répondu à votre story",
+  "storyReplyOpenChat": "Ouvrir la discussion"
 }

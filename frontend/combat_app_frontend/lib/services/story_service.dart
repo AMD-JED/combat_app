@@ -73,10 +73,15 @@ class StoryService {
     }
   }
 
-  /// POST /stories/{id}/reply — sends a DM to the author.
-  Future<void> reply(int storyId, String content) async {
+  /// POST /stories/{id}/reply — sends a DM to the author and returns the id
+  /// of the conversation it landed in (so the UI can offer "Open chat").
+  Future<int> reply(int storyId, String content) async {
     try {
-      await _dio.post(ApiConfig.storyReply(storyId), data: {'content': content});
+      final response = await _dio.post(
+        ApiConfig.storyReply(storyId),
+        data: {'content': content},
+      );
+      return response.data['conversation_id'] as int;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

@@ -12,6 +12,9 @@ class MessageModel {
   final DateTime? deletedAt;
   final DateTime createdAt;
 
+  /// Set when this message answers someone's story (`POST /stories/{id}/reply`).
+  final int? replyToStoryId;
+
   const MessageModel({
     required this.id,
     required this.conversationId,
@@ -22,6 +25,7 @@ class MessageModel {
     required this.isRead,
     this.deletedAt,
     required this.createdAt,
+    this.replyToStoryId,
   });
 
   /// The backend keeps `content`/`media_url` in the payload even after a
@@ -39,6 +43,9 @@ class MessageModel {
   bool get isImage => hasMedia && mediaType == 'image';
   bool get isVideo => hasMedia && mediaType == 'video';
 
+  /// A reply to a story (the bubble shows a small "replied to a story" tag).
+  bool get isStoryReply => !isDeleted && replyToStoryId != null;
+
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     return MessageModel(
       id: json['id'] as int,
@@ -52,6 +59,7 @@ class MessageModel {
           ? DateTime.parse(json['deleted_at'] as String)
           : null,
       createdAt: DateTime.parse(json['created_at'] as String),
+      replyToStoryId: json['reply_to_story_id'] as int?,
     );
   }
 
@@ -66,6 +74,7 @@ class MessageModel {
       isRead: isRead ?? this.isRead,
       deletedAt: deletedAt,
       createdAt: createdAt,
+      replyToStoryId: replyToStoryId,
     );
   }
 }
