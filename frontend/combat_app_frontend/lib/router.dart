@@ -12,6 +12,7 @@ import 'screens/profile/edit_profile_screen.dart';
 import 'screens/profile/public_profile_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/messages/chat_screen.dart';
+import 'screens/reels/create_reel_screen.dart';
 import 'screens/stories/create_story_screen.dart';
 import 'screens/stories/story_viewer_screen.dart';
 import 'models/user_model.dart';
@@ -76,6 +77,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final otherUser = state.extra as UserModel;
           return ChatScreen(conversationId: conversationId, otherUser: otherUser);
         },
+      ),
+      GoRoute(
+        path: '/reels/create',
+        builder: (context, state) => const CreateReelScreen(),
       ),
       GoRoute(
         path: '/stories/create',

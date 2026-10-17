@@ -59,4 +59,43 @@ class UploadService {
       throw ApiException.fromDioError(e);
     }
   }
+
+  /// POST /uploads/reel/video (multipart) → { url, thumbnail_url?, duration? }
+  ///
+  /// The endpoint waits on Cloudinary's upload before answering, so it gets
+  /// the same long timeout as post videos instead of the shared 15 s default.
+  Future<ReelUpload> uploadReelVideo(XFile file) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await multipartFromXFile(file),
+      });
+      final response = await _dio.post(
+        ApiConfig.uploadReelVideo,
+        data: formData,
+        options: Options(
+          sendTimeout: const Duration(minutes: 5),
+          receiveTimeout: const Duration(minutes: 5),
+        ),
+      );
+      final data = response.data as Map<String, dynamic>;
+      return ReelUpload(
+        url: data['url'] as String,
+        thumbnailUrl: data['thumbnail_url'] as String?,
+        durationSeconds: (data['duration'] as num?)?.round(),
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+}
+
+/// Result of [UploadService.uploadReelVideo]. `durationSeconds` is already an
+/// int: Cloudinary reports a float, but `ReelCreate.duration_seconds` is an
+/// integer field and rejects fractions.
+class ReelUpload {
+  final String url;
+  final String? thumbnailUrl;
+  final int? durationSeconds;
+
+  const ReelUpload({required this.url, this.thumbnailUrl, this.durationSeconds});
 }

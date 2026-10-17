@@ -7,6 +7,7 @@ import '../providers/sports_provider.dart';
 import 'feed/feed_screen.dart';
 import 'messages/conversations_screen.dart';
 import 'profile/profile_screen.dart';
+import 'reels/reels_screen.dart';
 import 'search/search_screen.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
@@ -19,13 +20,8 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   int _selectedIndex = 0;
 
-  // Order matches the NavigationDestinations below.
-  final List<Widget> _screens = const [
-    FeedScreen(),
-    SearchScreen(),
-    ConversationsScreen(),
-    ProfileScreen(),
-  ];
+  // Tab indexes — keep in sync with the NavigationDestinations below.
+  static const int _reelsIndex = 1;
 
   @override
   void initState() {
@@ -49,7 +45,15 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: _screens,
+        children: [
+          const FeedScreen(),
+          // The IndexedStack keeps hidden tabs alive: tell Reels when it is
+          // really on screen so it pauses the video otherwise.
+          ReelsScreen(isActive: _selectedIndex == _reelsIndex),
+          const SearchScreen(),
+          const ConversationsScreen(),
+          const ProfileScreen(),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
@@ -63,6 +67,11 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             icon: Icon(Icons.dynamic_feed_outlined, color: muted),
             selectedIcon: Icon(Icons.dynamic_feed, color: accent),
             label: l10n.feedTab,
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.play_circle_outline, color: muted),
+            selectedIcon: Icon(Icons.play_circle, color: accent),
+            label: l10n.reelsTab,
           ),
           NavigationDestination(
             icon: Icon(Icons.search_outlined, color: muted),
