@@ -29,6 +29,10 @@ class ReelResponse(BaseModel):
     # Surfaced from author.is_coach at serialization time (v9 decision:
     # anyone can post Reels, coaches just get a badge) — not a DB column.
     is_coach_content: bool = False
+    # v12: whether the signed-in user follows the reel's author (always False
+    # for the author's own reels) — lets the client show a follow button
+    # without an extra request per reel.
+    is_following_author: bool = False
     created_at: datetime
     updated_at: Optional[datetime] = None
 

@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.post import Comment
 from app.models.reel import Reel, ReelLike
+from app.models.user import follows
 from app.repositories.base_repository import BaseRepository
 
 
@@ -38,6 +39,21 @@ class ReelRepository(BaseRepository[Reel]):
             .where(Reel.id == reel_id)
         )
         return result.scalar_one_or_none()
+
+    async def followed_author_ids(self, user_id: int, author_ids: List[int]) -> set:
+        """Which of `author_ids` the user follows (one query for a whole page)."""
+        ids = {a for a in author_ids if a != user_id}
+        if not ids:
+            return set()
+        result = await self.db.execute(
+            select(follows.c.followed_id).where(
+                and_(
+                    follows.c.follower_id == user_id,
+                    follows.c.followed_id.in_(ids),
+                )
+            )
+        )
+        return {row[0] for row in result.all()}
 
     async def increment_view(self, reel_id: int) -> None:
         await self.db.execute(

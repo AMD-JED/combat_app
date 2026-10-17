@@ -31,6 +31,7 @@ def _serialize_reel(
     current_user_id: int,
     likes: Optional[List] = None,
     comments_count: Optional[int] = None,
+    following_ids: Optional[set] = None,
 ) -> ReelResponse:
     """
     `likes`/`comments_count` are accepted explicitly (never read off
@@ -57,6 +58,7 @@ def _serialize_reel(
         comments_count=count,
         is_liked_by_me=user_liked,
         is_coach_content=bool(reel.author.is_coach),
+        is_following_author=reel.author_id in (following_ids or set()),
         created_at=reel.created_at,
         updated_at=reel.updated_at,
     )
@@ -96,7 +98,8 @@ async def get_reels_feed(
 ):
     repo = ReelRepository(db)
     reels = await repo.get_feed(sport_id=sport_id, skip=skip, limit=limit)
-    return [_serialize_reel(r, current_user.id) for r in reels]
+    following = await repo.followed_author_ids(current_user.id, [r.author_id for r in reels])
+    return [_serialize_reel(r, current_user.id, following_ids=following) for r in reels]
 
 
 @router.get("/{reel_id}", response_model=ReelResponse)
@@ -114,7 +117,8 @@ async def get_reel(
     await db.commit()
 
     reel = await repo.get_with_relations(reel_id)
-    return _serialize_reel(reel, current_user.id)
+    following = await repo.followed_author_ids(current_user.id, [reel.author_id])
+    return _serialize_reel(reel, current_user.id, following_ids=following)
 
 
 @router.delete("/{reel_id}", status_code=status.HTTP_204_NO_CONTENT)
