@@ -285,7 +285,11 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
       messenger.showSnackBar(SnackBar(content: Text(l10n.storyReplyFailed)));
       return;
     }
-    messenger.showSnackBar(
+    // A SnackBar that has an action never times out by itself in recent
+    // Flutter versions, and the messenger lives above the router, so it would
+    // follow the user into every screen. Close it ourselves.
+    messenger.hideCurrentSnackBar();
+    final controller = messenger.showSnackBar(
       SnackBar(
         content: Text(l10n.storyReplySent),
         // The reply is a private message: tell the user where it went.
@@ -297,6 +301,11 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
             : null,
       ),
     );
+    var closed = false;
+    controller.closed.then((_) => closed = true);
+    Timer(const Duration(seconds: 6), () {
+      if (!closed) controller.close();
+    });
   }
 
   /// Opens the conversation with the story's author on top of the viewer,
